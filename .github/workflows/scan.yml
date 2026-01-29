@@ -43,12 +43,12 @@ jobs:
       - name: Run Stylelint (CSS/SCSS)
         continue-on-error: true
         run: |
-          # Modern Stylelint 16 automatically detects syntax (CSS vs SCSS)
+          # Use -o (output file) instead of > to prevent corruption from logs
           npx stylelint "./target-code/**/*.{css,scss,sass,less}" \
             --config .stylelintrc.json \
             --formatter json \
-            --allow-empty-input \
-            > stylelint-raw.json || true
+            --output-file stylelint-raw.json \
+            --allow-empty-input || true
 
       - name: Generate Report
         run: node map-wcag.js
