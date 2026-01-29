@@ -9,7 +9,6 @@ try {
   if (fs.existsSync(REPORT_FILE)) {
     const fileContent = fs.readFileSync(REPORT_FILE, 'utf8');
     const json = JSON.parse(fileContent);
-    // Handle both new object format and legacy array format safely
     if (Array.isArray(json)) {
       rawData.violations = json;
     } else {
@@ -52,6 +51,7 @@ const htmlTemplate = `
       max-width: 1000px;
       margin: 0 auto;
     }
+    
     /* HEADER & METADATA */
     header {
       background: var(--surface);
@@ -74,6 +74,16 @@ const htmlTemplate = `
     .meta-label { font-size: 0.85rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
     .meta-value { font-size: 1rem; font-weight: 500; color: var(--heading); word-break: break-all; }
     
+    /* Link Styling */
+    .meta-value a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .meta-value a:hover {
+      text-decoration: underline;
+    }
+
     /* STATUS BANNER */
     .status-banner {
       margin-top: 1.5rem;
@@ -146,7 +156,6 @@ const htmlTemplate = `
     .tag-wcag { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
     .tag-framework { background: #e0e7ff; color: #4338ca; border-color: #c7d2fe; }
     .tag-rule { font-family: monospace; background: #fff; border: 1px solid #e2e8f0; color: #64748b; }
-
   </style>
 </head>
 <body>
@@ -164,6 +173,12 @@ const htmlTemplate = `
     const totalIssues = violations.reduce((acc, f) => acc + f.messages.length, 0);
     const isSuccess = totalIssues === 0;
 
+    // Helper to make URL clickable
+    const repoUrl = meta.repositoryUrl || 'Local Scan';
+    const repoDisplay = repoUrl.startsWith('http') 
+      ? \`<a href="\${repoUrl}" target="_blank" rel="noopener noreferrer">\${repoUrl}</a>\` 
+      : repoUrl;
+
     // RENDER HEADER
     let html = \`
       <header>
@@ -171,7 +186,7 @@ const htmlTemplate = `
         <div class="meta-grid">
           <div class="meta-item">
             <span class="meta-label">Repository</span>
-            <span class="meta-value">\${meta.repositoryUrl || 'Local Scan'}</span>
+            <span class="meta-value">\${repoDisplay}</span>
           </div>
           <div class="meta-item">
             <span class="meta-label">Branch</span>
@@ -236,4 +251,4 @@ const htmlTemplate = `
 // Inject Data and Write File
 const finalHtml = htmlTemplate.replace('{{DATA_PLACEHOLDER}}', JSON.stringify(rawData));
 fs.writeFileSync(OUTPUT_FILE, finalHtml);
-console.log(`✅ HTML Report generated: \${OUTPUT_FILE}`);
+console.log(`✅ HTML Report generated: ${OUTPUT_FILE}`);
