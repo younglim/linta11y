@@ -61,6 +61,9 @@ jobs:
             --allow-empty-input || true
 
       - name: Generate JSON Data
+        env:
+          TARGET_REPO_URL: ${{ github.event.inputs.target_repo_url }}
+          TARGET_BRANCH: ${{ github.event.inputs.target_branch }}
         run: node map-wcag.js
 
       - name: Generate HTML Report
