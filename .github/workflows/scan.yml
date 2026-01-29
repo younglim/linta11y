@@ -11,6 +11,7 @@ on:
         description: 'Branch to scan (e.g. starter). Leave empty for default.'
         required: false
         type: string
+
 jobs:
   scan:
     runs-on: ubuntu-latest
@@ -47,7 +48,7 @@ jobs:
             --ext .js,.jsx,.ts,.tsx,.vue,.html \
             --resolve-plugins-relative-to . \
             --format json \
-            -o eslint-raw.json
+            --o eslint-raw.json
 
       - name: Run Stylelint (CSS/SCSS)
         continue-on-error: true
@@ -59,11 +60,16 @@ jobs:
             --output-file stylelint-raw.json \
             --allow-empty-input || true
 
-      - name: Generate Report
+      - name: Generate JSON Data
         run: node map-wcag.js
+
+      - name: Generate HTML Report
+        run: node generate-html.js
 
       - name: Upload Results
         uses: actions/upload-artifact@v4
         with:
           name: accessibility-report-${{ github.run_id }}
-          path: accessibility-report.json
+          path: |
+            accessibility-report.json
+            accessibility-report.html
