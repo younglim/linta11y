@@ -7,7 +7,10 @@ on:
         description: 'GitHub Repo URL to scan'
         required: true
         type: string
-
+      target_branch:
+        description: 'Branch to scan (e.g. starter). Leave empty for default.'
+        required: false
+        type: string
 jobs:
   scan:
     runs-on: ubuntu-latest
@@ -27,7 +30,13 @@ jobs:
 
       - name: Clone Target Repository
         run: |
-          git clone --depth 1 ${{ inputs.target_repo_url }} ./target-code
+          if [ -n "${{ inputs.target_branch }}" ]; then
+            echo "📍 Cloning specific branch: ${{ inputs.target_branch }}"
+            git clone --depth 1 --branch ${{ inputs.target_branch }} ${{ inputs.target_repo_url }} ./target-code
+          else
+            echo "📍 Cloning default branch"
+            git clone --depth 1 ${{ inputs.target_repo_url }} ./target-code
+          fi
 
       - name: Run ESLint (JS/TS/HTML/Vue)
         continue-on-error: true
