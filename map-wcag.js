@@ -1,6 +1,15 @@
 const fs = require('fs');
 
-// STRICT ALLOWLIST: Only rules mapping to specific WCAG criteria are allowed.
+// 1. CAPTURE METADATA FROM ENVIRONMENT
+const metadata = {
+  repositoryUrl: process.env.TARGET_REPO_URL || 'Unknown Repository',
+  branch: process.env.TARGET_BRANCH || 'Default',
+  scanDate: new Date().toLocaleString(),
+  commitHash: process.env.GITHUB_SHA || 'N/A'
+};
+
+// 2. STRICT RULE ALLOWLIST
+// Only rules mapping to specific WCAG criteria are allowed.
 const ruleMap = {
   // ===========================================================================
   // 📱 REACT NATIVE (Mobile A11y)
@@ -99,8 +108,19 @@ const ruleMap = {
   // ===========================================================================
   // 🎨 CSS / SCSS (Stylelint)
   // ===========================================================================
-  'declaration-property-value-disallowed-list': 'WCAG 2.4.7 (Focus Visible)',
+  'declaration-property-value-disallowed-list': 'WCAG 2.4.7 (Focus Visible) / 1.4.8 (Visual)',
   'declaration-property-unit-disallowed-list': 'WCAG 1.4.4 (Resize Text)',
+  'font-family-no-missing-generic-family-keyword': 'Best Practice (Fallback Fonts)'
+};
+
+// HELPER: Detect Framework based on Rule ID
+const getFramework = (ruleId) => {
+  if (ruleId.startsWith('react-native-a11y')) return 'React Native';
+  if (ruleId.startsWith('jsx-a11y')) return 'React (Web)';
+  if (ruleId.startsWith('@angular')) return 'Angular';
+  if (ruleId.startsWith('vue')) return 'Vue.js';
+  if (ruleId.startsWith('declaration-property') || ruleId.startsWith('font-')) return 'CSS/Styles';
+  return 'General';
 };
 
 const loadJSON = (path) => {
@@ -126,7 +146,7 @@ const normalizedStylelint = stylelintRaw.map(file => ({
 const allFiles = [...eslintRaw, ...normalizedStylelint];
 const unmappedRules = new Set();
 
-const finalReport = allFiles.map(f => {
+const violations = allFiles.map(f => {
    // STRICT FILTER: If ruleId is NOT in ruleMap, return false (discard it).
    const validMsgs = f.messages.filter(m => {
      if (ruleMap[m.ruleId]) return true;
@@ -139,7 +159,8 @@ const finalReport = allFiles.map(f => {
    f.filePath = f.filePath.split('/target-code/')[1] || f.filePath;
    f.messages = validMsgs.map(m => ({
      ...m,
-     wcagClause: ruleMap[m.ruleId]
+     wcagClause: ruleMap[m.ruleId],
+     framework: getFramework(m.ruleId) // ✅ Added Framework detection
    }));
    return f;
 }).filter(Boolean);
@@ -151,5 +172,11 @@ if (unmappedRules.size > 0) {
   console.log("\n");
 }
 
+// 3. WRITE OUTPUT (Structure: { metadata, violations })
+const finalReport = {
+  metadata: metadata,
+  violations: violations
+};
+
 fs.writeFileSync('accessibility-report.json', JSON.stringify(finalReport, null, 2));
-console.log(`✅ Total Code Scan: ${finalReport.length} files with A11y issues.`);
+console.log(`✅ Scan Complete: ${violations.length} files found with issues.`);
