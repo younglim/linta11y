@@ -2,12 +2,42 @@
   "root": true,
   "env": { "browser": true, "es2021": true, "node": true },
   "overrides": [
+    // ----------------------------------------------------------------------
+    // 1. REACT & REACT NATIVE
+    // ----------------------------------------------------------------------
+    {
+      "files": ["*.jsx", "*.tsx", "*.js", "*.ts"],
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": { "ecmaVersion": 2020, "sourceType": "module", "ecmaFeatures": { "jsx": true } },
+      "plugins": ["jsx-a11y", "react", "react-native-a11y", "@typescript-eslint"],
+      "extends": [
+        // WEB: Enforce strict WCAG rules for React
+        "plugin:jsx-a11y/strict",
+        // MOBILE: Enforce all available checks for React Native
+        "plugin:react-native-a11y/all"
+      ],
+      "rules": {
+        "react/jsx-uses-react": "off",
+        "react/react-in-jsx-scope": "off",
+        
+        // Ensure these critical Mobile A11y rules are Errors (not warnings)
+        "react-native-a11y/has-accessibility-hint": "error",
+        "react-native-a11y/has-valid-accessibility-descriptors": "error"
+      }
+    },
+
+    // ----------------------------------------------------------------------
+    // 2. ANGULAR (Templates)
+    // ----------------------------------------------------------------------
     {
       "files": ["*.html"],
       "parser": "@angular-eslint/template-parser",
       "plugins": ["@angular-eslint/template"],
-      "extends": ["plugin:@angular-eslint/template/accessibility"],
+      "extends": [
+        "plugin:@angular-eslint/template/accessibility"
+      ],
       "rules": {
+        // Elevate all warnings to Errors
         "@angular-eslint/template/alt-text": "error",
         "@angular-eslint/template/elements-content": "error",
         "@angular-eslint/template/valid-aria": "error",
@@ -15,28 +45,13 @@
         "@angular-eslint/template/mouse-events-have-key-events": "error",
         "@angular-eslint/template/label-has-associated-control": "error",
         "@angular-eslint/template/role-has-required-aria": "error",
-        "@angular-eslint/template/table-scope": "error",
-        "@angular-eslint/template/no-positive-tabindex": "error",
-        "@angular-eslint/template/no-autofocus": "error",
-        "@angular-eslint/template/no-distracting-elements": "error"
+        "@angular-eslint/template/table-scope": "error"
       }
     },
-    {
-      "files": ["*.jsx", "*.tsx", "*.js", "*.ts"],
-      "parser": "@typescript-eslint/parser",
-      "parserOptions": { "ecmaVersion": 2020, "sourceType": "module", "ecmaFeatures": { "jsx": true } },
-      "plugins": ["jsx-a11y", "react", "react-native-a11y", "@typescript-eslint"],
-      "extends": ["plugin:jsx-a11y/strict", "plugin:react-native-a11y/all"],
-      "rules": {
-        "react/jsx-uses-react": "off",
-        "react/react-in-jsx-scope": "off",
-        "jsx-a11y/anchor-is-valid": "off",
-        
-        // Strict React Native A11y
-        "react-native-a11y/has-accessibility-hint": "error",
-        "react-native-a11y/has-valid-accessibility-descriptors": "error"
-      }
-    },
+
+    // ----------------------------------------------------------------------
+    // 3. VUE.JS
+    // ----------------------------------------------------------------------
     {
       "files": ["*.vue"],
       "parser": "vue-eslint-parser",
