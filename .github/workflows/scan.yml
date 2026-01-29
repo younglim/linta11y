@@ -22,8 +22,8 @@ jobs:
 
       - name: Install Golden Set Dependencies
         run: |
-          # FIX 1: Downgrade Stylelint to v14 (Compatible with a11y plugin)
-          # FIX 2: Add missing @angular-eslint/eslint-plugin-template
+          # FIX 1: Install 'postcss-scss' so Stylelint can read SCSS files
+          # FIX 2: Downgrade Angular plugins to v16 for better ESLint 8 stability
           npm install --legacy-peer-deps \
             eslint@8.57.0 \
             typescript@5.4.5 \
@@ -37,15 +37,17 @@ jobs:
             vue-eslint-parser@9.4.2 \
             @html-eslint/parser@0.24.1 \
             @html-eslint/eslint-plugin@0.24.1 \
-            @angular-eslint/eslint-plugin@17.3.0 \
-            @angular-eslint/eslint-plugin-template@17.3.0 \
-            @angular-eslint/template-parser@17.3.0 \
+            @angular-eslint/eslint-plugin@16.0.3 \
+            @angular-eslint/eslint-plugin-template@16.0.3 \
+            @angular-eslint/template-parser@16.0.3 \
             stylelint@14.16.1 \
             stylelint-config-standard@29.0.0 \
-            stylelint-a11y@1.2.3
+            stylelint-a11y@1.2.3 \
+            postcss@8.4.38 \
+            postcss-scss@4.0.9
 
       - name: Clone Target Repository
-        # We clone the 'get-started' branch for the Angular repo as 'main' is often fixed
+        # Cloning 'get-started' branch for the Angular demo to ensure we get the broken code
         run: |
           git clone --depth 1 ${{ inputs.target_repo_url }} ./target-code
 
@@ -202,11 +204,13 @@ jobs:
           --format json \
           -o eslint-raw.json
 
+      # FIX 3: Use --custom-syntax postcss-scss to prevent Stylelint crash
       - name: Run Stylelint (CSS/SCSS)
         continue-on-error: true
         run: |
           npx stylelint "./target-code/**/*.{css,scss,less,sass}" \
           --config .stylelintrc.json \
+          --custom-syntax postcss-scss \
           --formatter json \
           --allow-empty-input \
           > stylelint-raw.json
