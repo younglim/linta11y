@@ -15,16 +15,15 @@ jobs:
       - name: Checkout Host Repo
         uses: actions/checkout@v4
 
-      # Use Node 18 for compatibility with our Golden Set
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm' # Automatically caches based on your package.json!
+          # cache: 'npm'  <-- REMOVED: Caused the error because package-lock.json is missing
 
       - name: Install Scanner Engine
-        run: npm ci
-        # 'npm ci' is faster and cleaner for CI environments than 'npm install'
+        # CHANGED: 'npm ci' -> 'npm install' (install generates the lockfile on the fly)
+        run: npm install
 
       - name: Clone Target Repository
         run: |
