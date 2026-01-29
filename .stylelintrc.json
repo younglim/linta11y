@@ -1,15 +1,18 @@
 {
-  "extends": ["stylelint-config-standard", "stylelint-config-standard-scss"],
+  "extends": ["stylelint-config-recommended", "stylelint-config-recommended-scss"],
   "rules": {
+    // WCAG 2.4.7 (Focus Visible)
     "declaration-property-value-disallowed-list": {
       "outline": ["none", "0"],
-      "outline-width": ["0", "0px"],
-      "text-align": ["justify"]
+      "outline-width": ["0", "0px"]
     },
-    "font-family-no-missing-generic-family-keyword": true,
-    "unit-no-unknown": true,
-    "selector-class-pattern": null,
-    "custom-property-pattern": null,
-    "no-descending-specificity": null
+    // WCAG 1.4.4 (Resize Text) - Block pixels on font/line-height
+    "declaration-property-unit-disallowed-list": {
+      "font-size": ["px"],
+      "line-height": ["px"]
+    },
+    // Disable noisy style rules that might leak through
+    "no-descending-specificity": null,
+    "selector-class-pattern": null
   }
 }
