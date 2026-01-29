@@ -32,9 +32,9 @@
         "react/react-in-jsx-scope": "off",
         "jsx-a11y/anchor-is-valid": "off",
         
+        // Strict React Native A11y
         "react-native-a11y/has-accessibility-hint": "error",
-        "react-native-a11y/accessibility-label": "error",
-        "react-native-a11y/accessible-image-has-label": "error"
+        "react-native-a11y/has-valid-accessibility-descriptors": "error"
       }
     },
     {
