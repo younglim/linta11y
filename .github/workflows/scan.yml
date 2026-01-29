@@ -20,11 +20,11 @@ jobs:
         with:
           node-version: '20'
 
-      # FIX 1: Install TypeScript Parsers
-      # We added @typescript-eslint/parser and related plugins to handle .tsx files
+      # FIX: Pin 'eslint' to version 8.x to support legacy flags (--ext, --no-eslintrc)
       - name: Install Scanner Engine
         run: |
-          npm install eslint \
+          npm install \
+            eslint@^8.57.0 \
             eslint-plugin-jsx-a11y \
             eslint-plugin-react \
             @typescript-eslint/parser \
@@ -35,7 +35,6 @@ jobs:
         run: |
           git clone ${{ inputs.target_repo_url }} ./target-code
 
-      # FIX 2: Update ESLint Config to use the TS Parser
       - name: Generate Configurations
         run: |
           # --- Create ESLint Config ---
@@ -55,8 +54,6 @@ jobs:
               "plugin:jsx-a11y/strict"
             ],
             "rules": {
-              # React Native doesn't use standard HTML elements, so we map some rules
-              # or disable ones that don't apply to native (like href validity)
               "react/jsx-uses-react": "off",
               "react/react-in-jsx-scope": "off",
               "jsx-a11y/anchor-is-valid": "off" 
@@ -68,7 +65,6 @@ jobs:
           cat << 'EOF' > map-wcag.js
           const fs = require('fs');
           
-          // Define the WCAG mapping
           const ruleMap = {
             'jsx-a11y/alt-text': 'WCAG 1.1.1 (Non-text Content)',
             'jsx-a11y/anchor-has-content': 'WCAG 2.4.4 (Link Purpose)',
@@ -98,14 +94,11 @@ jobs:
             const report = JSON.parse(content);
             
             const enriched = report.map(f => {
-              // Filter out files with no messages AND parsing errors
               if (f.messages.length === 0) return null;
 
-              // Clean up path
               f.filePath = f.filePath.split('/target-code/')[1] || f.filePath;
               
               f.messages = f.messages.map(m => {
-                // Check if it's still a parsing error (should be fixed now)
                 if (m.message && m.message.includes("Parsing error")) {
                    return { ...m, wcagClause: "Tool Configuration Error" };
                 }
@@ -127,7 +120,6 @@ jobs:
       - name: Execute Scan
         continue-on-error: true
         run: |
-          # We explicitly tell ESLint to use the config we just made
           npx eslint ./target-code \
           --config .eslintrc-temp.json \
           --no-eslintrc \
