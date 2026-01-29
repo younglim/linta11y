@@ -22,7 +22,7 @@ jobs:
 
       - name: Install Golden Set Dependencies
         run: |
-          npm install \
+          npm install --legacy-peer-deps \
             eslint@8.57.0 \
             typescript@5.4.5 \
             @typescript-eslint/parser@7.8.0 \
@@ -40,7 +40,7 @@ jobs:
             stylelint@16.2.0 \
             stylelint-config-standard@36.0.0 \
             stylelint-a11y@1.2.3
-
+              
       - name: Clone Target Repository
         run: |
           git clone --depth 1 ${{ inputs.target_repo_url }} ./target-code
