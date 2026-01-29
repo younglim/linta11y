@@ -1,7 +1,6 @@
 {
   "extends": ["stylelint-config-standard"],
   "plugins": ["stylelint-a11y"],
-  "customSyntax": "postcss-scss",
   "rules": {
     "a11y/media-prefers-reduced-motion": true,
     "a11y/no-outline-none": true,
@@ -11,8 +10,6 @@
     "a11y/no-text-align-justify": true,
     "selector-class-pattern": null,
     "selector-id-pattern": null,
-    "no-descending-specificity": null,
-    "alpha-value-notation": null,
-    "color-function-notation": null
+    "no-descending-specificity": null
   }
 }
