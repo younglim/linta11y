@@ -38,4 +38,33 @@ const loadJSON = (path) => {
    catch (e) { console.log(`Skipping ${path}: Invalid JSON`); return []; }
 };
 
-// ... (Rest of the script remains the same)
+const eslintRaw = loadJSON('eslint-raw.json');
+const stylelintRaw = loadJSON('stylelint-raw.json');
+
+const normalizedStylelint = stylelintRaw.map(file => ({
+  filePath: file.source.split('/target-code/')[1] || file.source,
+  messages: file.warnings.map(w => ({
+    ruleId: w.rule,
+    message: w.text,
+    line: w.line,
+    column: w.column,
+    severity: 2
+  }))
+}));
+
+const allFiles = [...eslintRaw, ...normalizedStylelint];
+
+const finalReport = allFiles.map(f => {
+   const validMsgs = f.messages.filter(m => ruleMap[m.ruleId]);
+   if (validMsgs.length === 0) return null;
+
+   f.filePath = f.filePath.split('/target-code/')[1] || f.filePath;
+   f.messages = validMsgs.map(m => ({
+     ...m,
+     wcagClause: ruleMap[m.ruleId]
+   }));
+   return f;
+}).filter(Boolean);
+
+fs.writeFileSync('accessibility-report.json', JSON.stringify(finalReport, null, 2));
+console.log(`✅ Total Code Scan: ${finalReport.length} files with A11y issues.`);
