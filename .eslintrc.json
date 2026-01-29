@@ -1,0 +1,41 @@
+{
+  "root": true,
+  "env": { "browser": true, "es2021": true, "node": true },
+  "overrides": [
+    {
+      "files": ["*.html"],
+      "parser": "@angular-eslint/template-parser",
+      "plugins": ["@angular-eslint/template"],
+      "extends": ["plugin:@angular-eslint/template/accessibility"],
+      "rules": {
+        "@angular-eslint/template/alt-text": "error",
+        "@angular-eslint/template/elements-content": "error",
+        "@angular-eslint/template/valid-aria": "error",
+        "@angular-eslint/template/click-events-have-key-events": "error",
+        "@angular-eslint/template/mouse-events-have-key-events": "error",
+        "@angular-eslint/template/label-has-associated-control": "error",
+        "@angular-eslint/template/role-has-required-aria": "error"
+      }
+    },
+    {
+      "files": ["*.jsx", "*.tsx", "*.js", "*.ts"],
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": { "ecmaVersion": 2020, "sourceType": "module", "ecmaFeatures": { "jsx": true } },
+      "plugins": ["jsx-a11y", "react", "react-native-a11y", "@typescript-eslint"],
+      "extends": ["plugin:jsx-a11y/strict", "plugin:react-native-a11y/all"],
+      "rules": {
+        "react/jsx-uses-react": "off",
+        "react/react-in-jsx-scope": "off",
+        "jsx-a11y/anchor-is-valid": "off",
+        "react-native-a11y/has-accessibility-hint": "off"
+      }
+    },
+    {
+      "files": ["*.vue"],
+      "parser": "vue-eslint-parser",
+      "parserOptions": { "parser": "@typescript-eslint/parser", "extraFileExtensions": [".vue"] },
+      "plugins": ["vue", "vuejs-accessibility"],
+      "extends": ["plugin:vue/essential", "plugin:vuejs-accessibility/recommended"]
+    }
+  ]
+}
