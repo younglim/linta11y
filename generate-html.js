@@ -236,4 +236,4 @@ const htmlTemplate = `
 // Inject Data and Write File
 const finalHtml = htmlTemplate.replace('{{DATA_PLACEHOLDER}}', JSON.stringify(rawData));
 fs.writeFileSync(OUTPUT_FILE, finalHtml);
-console.log(\`✅ HTML Report generated: \${OUTPUT_FILE}\`);
+console.log(`✅ HTML Report generated: \${OUTPUT_FILE}`);
