@@ -1,7 +1,3 @@
-Here is a comprehensive update for your `README.md`. It clearly defines the project's capabilities, the technology stack it analyzes, and provides a detailed breakdown of why the specific test repositories were chosen.
-
----
-
 # linta11y
 
 **Tally accessibility issues by linting remote repositories.**
