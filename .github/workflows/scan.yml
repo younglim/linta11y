@@ -18,13 +18,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18' # Downgraded to Node 18 for better compatibility with Stylelint 13
 
       - name: Install Golden Set Dependencies
         run: |
-          # FIX 1: Install 'postcss-scss' so Stylelint can read SCSS files
-          # FIX 2: Downgrade Angular plugins to v16 for better ESLint 8 stability
-          npm install --legacy-peer-deps \
+          # FIX: Strictly pinned "Safe Mode" versions
+          # Stylelint 13 is the LAST version supported by stylelint-a11y
+          # Angular-ESLint 17 is the BEST match for ESLint 8
+          npm install \
             eslint@8.57.0 \
             typescript@5.4.5 \
             @typescript-eslint/parser@7.8.0 \
@@ -37,17 +38,18 @@ jobs:
             vue-eslint-parser@9.4.2 \
             @html-eslint/parser@0.24.1 \
             @html-eslint/eslint-plugin@0.24.1 \
-            @angular-eslint/eslint-plugin@16.0.3 \
-            @angular-eslint/eslint-plugin-template@16.0.3 \
-            @angular-eslint/template-parser@16.0.3 \
-            stylelint@14.16.1 \
-            stylelint-config-standard@29.0.0 \
+            @angular-eslint/eslint-plugin@17.3.0 \
+            @angular-eslint/eslint-plugin-template@17.3.0 \
+            @angular-eslint/template-parser@17.3.0 \
+            stylelint@13.13.1 \
+            stylelint-config-standard@22.0.0 \
             stylelint-a11y@1.2.3 \
-            postcss@8.4.38 \
-            postcss-scss@4.0.9
+            postcss@8.3.11 \
+            postcss-scss@4.0.9 \
+            --legacy-peer-deps
 
       - name: Clone Target Repository
-        # Cloning 'get-started' branch for the Angular demo to ensure we get the broken code
+        # We clone the 'get-started' branch for Angular to ensure we hit the bugs
         run: |
           git clone --depth 1 ${{ inputs.target_repo_url }} ./target-code
 
@@ -98,7 +100,7 @@ jobs:
           }
           EOF
 
-          # --- STYLELINT CONFIG ---
+          # --- STYLELINT CONFIG (v13 Compatible) ---
           cat << 'EOF' > .stylelintrc.json
           {
             "extends": ["stylelint-config-standard"],
@@ -110,12 +112,9 @@ jobs:
               "a11y/content-property-no-static-value": true,
               "a11y/no-obsolete-attribute": true,
               "a11y/no-text-align-justify": true,
-              "custom-property-pattern": null,
               "selector-class-pattern": null,
               "selector-id-pattern": null,
-              "no-descending-specificity": null,
-              "alpha-value-notation": null,
-              "color-function-notation": null
+              "no-descending-specificity": null
             }
           }
           EOF
@@ -204,13 +203,13 @@ jobs:
           --format json \
           -o eslint-raw.json
 
-      # FIX 3: Use --custom-syntax postcss-scss to prevent Stylelint crash
+      # FIX 3: Use Stylelint v13 CLI syntax (no --custom-syntax, use --syntax scss)
       - name: Run Stylelint (CSS/SCSS)
         continue-on-error: true
         run: |
           npx stylelint "./target-code/**/*.{css,scss,less,sass}" \
           --config .stylelintrc.json \
-          --custom-syntax postcss-scss \
+          --syntax scss \
           --formatter json \
           --allow-empty-input \
           > stylelint-raw.json
