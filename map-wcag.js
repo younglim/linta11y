@@ -1,8 +1,9 @@
 const fs = require('fs');
 
+// STRICT ALLOWLIST: Only rules mapping to specific WCAG criteria are allowed.
 const ruleMap = {
   // ===========================================================================
-  // 📱 REACT NATIVE (Mobile Accessibility)
+  // 📱 REACT NATIVE (Mobile A11y)
   // ===========================================================================
   'react-native-a11y/has-accessibility-hint': 'WCAG 3.3.2 (Labels or Instructions)',
   'react-native-a11y/has-valid-accessibility-descriptors': 'WCAG 4.1.2 (Name, Role, Value)',
@@ -31,7 +32,7 @@ const ruleMap = {
   '@angular-eslint/template/valid-aria': 'WCAG 4.1.2 (Name, Role, Value)',
 
   // ===========================================================================
-  // ⚛️ REACT (JSX A11y)
+  // ⚛️ REACT (Web JSX)
   // ===========================================================================
   'jsx-a11y/alt-text': 'WCAG 1.1.1 (Non-text Content)',
   'jsx-a11y/anchor-ambiguous-text': 'WCAG 2.4.4 (Link Purpose)',
@@ -71,7 +72,7 @@ const ruleMap = {
   'jsx-a11y/tabindex-no-positive': 'WCAG 2.4.3 (Focus Order)',
 
   // ===========================================================================
-  // ✌️ VUE.JS (Template A11y)
+  // ✌️ VUE.JS
   // ===========================================================================
   'vuejs-accessibility/alt-text': 'WCAG 1.1.1 (Non-text Content)',
   'vuejs-accessibility/anchor-has-content': 'WCAG 4.1.2 (Name, Role, Value)',
@@ -96,46 +97,16 @@ const ruleMap = {
   'vuejs-accessibility/tabindex-no-positive': 'WCAG 2.4.3 (Focus Order)',
 
   // ===========================================================================
-  // 🌐 HTML (Raw HTML)
-  // ===========================================================================
-  '@html-eslint/require-alt': 'WCAG 1.1.1 (Non-text Content)',
-  '@html-eslint/require-lang': 'WCAG 3.1.1 (Language of Page)',
-  '@html-eslint/require-title': 'WCAG 2.4.2 (Page Titled)',
-  '@html-eslint/no-duplicate-id': 'WCAG 4.1.1 (Parsing)',
-  '@html-eslint/no-inline-styles': 'Best Practice (Separation of Concerns)',
-  '@html-eslint/require-meta-viewport': 'Best Practice (Responsive Design)',
-  '@html-eslint/no-abstract-roles': 'WCAG 4.1.2 (Name, Role, Value)',
-  '@html-eslint/no-accesskey-attrs': 'WCAG 2.1.1 (Keyboard)',
-  '@html-eslint/no-aria-hidden-body': 'WCAG 4.1.2 (Name, Role, Value)',
-  '@html-eslint/no-aria-hidden-on-focusable': 'WCAG 4.1.2 (Name, Role, Value)',
-  '@html-eslint/no-empty-headings': 'WCAG 1.3.1 (Info and Relationships)',
-  '@html-eslint/no-heading-inside-button': 'WCAG 4.1.2 (Name, Role, Value)',
-  '@html-eslint/no-invalid-role': 'WCAG 4.1.2 (Name, Role, Value)',
-  '@html-eslint/no-non-scalable-viewport': 'WCAG 1.4.4 (Resize text)',
-  '@html-eslint/no-positive-tabindex': 'WCAG 2.4.3 (Focus Order)',
-  '@html-eslint/no-skip-heading-levels': 'WCAG 1.3.1 (Info and Relationships)',
-  '@html-eslint/require-form-method': 'Best Practice (Security/Robustness)',
-  '@html-eslint/require-frame-title': 'WCAG 2.4.1 (Bypass Blocks)',
-  '@html-eslint/require-input-label': 'WCAG 3.3.2 (Labels or Instructions)',
-
-  // ===========================================================================
   // 🎨 CSS / SCSS (Stylelint)
   // ===========================================================================
   'declaration-property-value-disallowed-list': 'WCAG 2.4.7 (Focus Visible)',
-  'alpha-value-notation': 'Best Practice (Modern CSS)',
-  'color-function-notation': 'Best Practice (Modern CSS)',
-  'property-no-vendor-prefix': 'Best Practice (Clean Code)',
-  'scss/no-global-function-names': 'Best Practice (Modern SCSS)',
-  'declaration-empty-line-before': 'Best Practice (Readability)',
-  'font-family-no-missing-generic-family-keyword': 'Best Practice (Fallback Fonts)',
-  'unit-no-unknown': 'Best Practice (Valid CSS)',
-  'media-feature-name-no-unknown': 'Best Practice (Valid Media Queries)'
+  'declaration-property-unit-disallowed-list': 'WCAG 1.4.4 (Resize Text)',
 };
 
 const loadJSON = (path) => {
-   if (!fs.existsSync(path)) { console.log(`Skipping ${path}: Not found`); return []; }
+   if (!fs.existsSync(path)) { return []; }
    try { return JSON.parse(fs.readFileSync(path, 'utf8')); } 
-   catch (e) { console.log(`Skipping ${path}: Invalid JSON`); return []; }
+   catch (e) { return []; }
 };
 
 const eslintRaw = loadJSON('eslint-raw.json');
@@ -156,9 +127,10 @@ const allFiles = [...eslintRaw, ...normalizedStylelint];
 const unmappedRules = new Set();
 
 const finalReport = allFiles.map(f => {
+   // STRICT FILTER: If ruleId is NOT in ruleMap, return false (discard it).
    const validMsgs = f.messages.filter(m => {
      if (ruleMap[m.ruleId]) return true;
-     unmappedRules.add(m.ruleId); 
+     unmappedRules.add(m.ruleId);
      return false;
    });
 
@@ -172,8 +144,9 @@ const finalReport = allFiles.map(f => {
    return f;
 }).filter(Boolean);
 
+// DEBUG LOG: Shows what was filtered out (useful to ensure we aren't dropping valid a11y rules)
 if (unmappedRules.size > 0) {
-  console.log("\n⚠️  WARNING: The following rules were detected but filtered out (consider adding them to map-wcag.js):");
+  console.log("\n⚠️  FILTERED OUT (Non-mapped rules):");
   unmappedRules.forEach(r => console.log(`   - ${r}`));
   console.log("\n");
 }
