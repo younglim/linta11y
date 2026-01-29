@@ -1,13 +1,10 @@
 const fs = require('fs');
 
 const ruleMap = {
-  // CSS RULES
-  'a11y/no-outline-none': 'WCAG 2.4.7 (Focus Visible)',
-  'a11y/selector-pseudo-class-focus': 'WCAG 2.4.7 (Focus Visible)',
-  'a11y/content-property-no-static-value': 'WCAG 1.3.1 (Info and Relationships)',
-  'a11y/media-prefers-reduced-motion': 'WCAG 2.3.3 (Animation from Interactions)',
-  'a11y/no-text-align-justify': 'WCAG 1.4.8 (Visual Presentation)',
-
+  // CSS RULES (Native Stylelint Mappings)
+  'declaration-property-value-disallowed-list': 'WCAG 2.4.7 (Focus Visible)',
+  'font-family-no-missing-generic-family-keyword': 'Best Practice (Fallback Fonts)',
+  
   // ANGULAR
   '@angular-eslint/template/alt-text': 'WCAG 1.1.1 (Non-text Content)',
   '@angular-eslint/template/elements-content': 'WCAG 1.3.1 (Info and Relationships)',
@@ -28,9 +25,9 @@ const ruleMap = {
 };
 
 const loadJSON = (path) => {
-   if (!fs.existsSync(path)) return [];
+   if (!fs.existsSync(path)) { console.log(`Skipping ${path}: Not found`); return []; }
    try { return JSON.parse(fs.readFileSync(path, 'utf8')); } 
-   catch (e) { return []; }
+   catch (e) { console.log(`Skipping ${path}: Invalid JSON`); return []; }
 };
 
 const eslintRaw = loadJSON('eslint-raw.json');
