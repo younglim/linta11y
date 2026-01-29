@@ -19,6 +19,11 @@ try {
   console.error("Error reading report:", e);
 }
 
+// 2. Safely Serialize JSON
+// We replace </script> with <\/script> to prevent the browser from interpreting 
+// source code inside the JSON as the end of the script block.
+const SAFE_JSON = JSON.stringify(rawData).replace(/<\/script>/g, '<\\/script>');
+
 const htmlTemplate = `
 <!DOCTYPE html>
 <html lang="en">
@@ -162,7 +167,7 @@ const htmlTemplate = `
   <div class="container" id="app"></div>
 
   <script>
-    // INJECTED DATA
+    // INJECTED DATA (Escaped)
     const DATA = {{DATA_PLACEHOLDER}};
     const app = document.getElementById('app');
 
@@ -249,6 +254,6 @@ const htmlTemplate = `
 `;
 
 // Inject Data and Write File
-const finalHtml = htmlTemplate.replace('{{DATA_PLACEHOLDER}}', JSON.stringify(rawData));
+const finalHtml = htmlTemplate.replace('{{DATA_PLACEHOLDER}}', SAFE_JSON);
 fs.writeFileSync(OUTPUT_FILE, finalHtml);
 console.log(`✅ HTML Report generated: ${OUTPUT_FILE}`);
