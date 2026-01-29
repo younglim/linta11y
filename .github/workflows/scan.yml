@@ -1,4 +1,4 @@
-name: Universal A11y Scanner
+name: 🚀 Universal A11y Scanner
 
 on:
   workflow_dispatch:
@@ -15,15 +15,15 @@ jobs:
       - name: Checkout Host Repo
         uses: actions/checkout@v4
 
+      # Use Node 18 (Required for Stylelint 13 compatibility)
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          # cache: 'npm'  <-- REMOVED: Caused the error because package-lock.json is missing
 
       - name: Install Scanner Engine
-        # CHANGED: 'npm ci' -> 'npm install' (install generates the lockfile on the fly)
-        run: npm install
+        # We use 'npm install' instead of 'npm ci' so it works without a pre-existing lockfile
+        run: npm install --legacy-peer-deps
 
       - name: Clone Target Repository
         run: |
@@ -43,8 +43,10 @@ jobs:
       - name: Run Stylelint (CSS/SCSS)
         continue-on-error: true
         run: |
+          # Uses Stylelint v13 Syntax (Note: --syntax scss)
           npx stylelint "./target-code/**/*.{css,scss,less,sass}" \
             --config .stylelintrc.json \
+            --syntax scss \
             --formatter json \
             --allow-empty-input \
             > stylelint-raw.json
