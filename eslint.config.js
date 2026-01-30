@@ -1,0 +1,62 @@
+const { FlatCompat } = require('@eslint/eslintrc');
+
+const compat = new FlatCompat({ baseDirectory: __dirname });
+
+module.exports = [
+  ...compat.config({
+    root: true,
+    env: { browser: true, es2021: true, node: true },
+    overrides: [
+      {
+        files: ['*.jsx', '*.tsx', '*.js', '*.ts'],
+        parser: '@typescript-eslint/parser',
+        parserOptions: { ecmaVersion: 2020, sourceType: 'module', ecmaFeatures: { jsx: true } },
+        plugins: ['jsx-a11y', 'react', 'react-native-a11y', '@typescript-eslint'],
+        extends: ['plugin:jsx-a11y/strict', 'plugin:react-native-a11y/all'],
+        rules: {
+          'react/jsx-uses-react': 'off',
+          'react/react-in-jsx-scope': 'off',
+          'react-native-a11y/has-accessibility-hint': 'error',
+          'react-native-a11y/has-valid-accessibility-descriptors': 'error',
+          'react-native-a11y/has-valid-important-for-accessibility': 'error',
+          'react-native-a11y/has-valid-accessibility-ignores-invert-colors': 'error'
+        }
+      },
+      {
+        files: ['**/*.component.html', '**/*.template.html'],
+        parser: '@angular-eslint/template-parser',
+        plugins: ['@angular-eslint/template'],
+        extends: ['plugin:@angular-eslint/template/accessibility'],
+        rules: {
+          '@angular-eslint/template/alt-text': 'error',
+          '@angular-eslint/template/elements-content': 'error',
+          '@angular-eslint/template/valid-aria': 'error',
+          '@angular-eslint/template/click-events-have-key-events': 'error',
+          '@angular-eslint/template/mouse-events-have-key-events': 'error',
+          '@angular-eslint/template/label-has-associated-control': 'error',
+          '@angular-eslint/template/role-has-required-aria': 'error',
+          '@angular-eslint/template/table-scope': 'error',
+          '@angular-eslint/template/button-has-type': 'error'
+        }
+      },
+      {
+        files: ['**/*.html'],
+        excludedFiles: ['**/*.component.html', '**/*.template.html'],
+        parser: '@html-eslint/parser',
+        plugins: ['@html-eslint'],
+        extends: ['plugin:@html-eslint/recommended']
+      },
+      {
+        files: ['*.vue'],
+        parser: 'vue-eslint-parser',
+        parserOptions: { parser: '@typescript-eslint/parser', extraFileExtensions: ['.vue'] },
+        plugins: ['vue', 'vuejs-accessibility'],
+        extends: ['plugin:vue/essential', 'plugin:vuejs-accessibility/recommended'],
+        rules: {
+          'vuejs-accessibility/no-aria-hidden-on-focusable': 'error',
+          'vuejs-accessibility/no-role-presentation-on-focusable': 'error'
+        }
+      }
+    ]
+  })
+];

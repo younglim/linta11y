@@ -45,7 +45,6 @@
         "@angular-eslint/template/label-has-associated-control": "error",
         "@angular-eslint/template/role-has-required-aria": "error",
         "@angular-eslint/template/table-scope": "error",
-        // Added missing rule
         "@angular-eslint/template/button-has-type": "error"
       }
     },

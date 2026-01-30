@@ -41,13 +41,9 @@ jobs:
 
       - name: Run ESLint (JS/TS/HTML/Vue)
         continue-on-error: true
-        # ESLint 9 Requirement:
-        # We must set ESLINT_USE_FLAT_CONFIG='false' to force it to read .eslintrc.json
-        env:
-          ESLINT_USE_FLAT_CONFIG: 'false'
         run: |
           npx eslint "./target-code/**/*.{js,jsx,ts,tsx,vue,html}" \
-            --config .eslintrc.json \
+            --config eslint.config.js \
             --format json \
             --output-file eslint-raw.json
 
