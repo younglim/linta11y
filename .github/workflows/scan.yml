@@ -19,19 +19,15 @@ jobs:
       - name: Checkout Host Repo
         uses: actions/checkout@v4
 
-      # Use Node 20 (We are now fully modern!)
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       - name: Install Scanner Engine
-        # 1. Install dependencies from package.json
-        # 2. Force install 'stylelint-a11y' (missing in your package.json)
-        # 3. Force 'eslint@8' (to support your .eslintrc.json legacy format)
+        # 1. 'npm install' installs ESLint 9 (from your package.json)
         run: |
           npm install
-          npm install stylelint-a11y eslint@8.57.0 --save-dev
 
       - name: Clone Target Repository
         run: |
@@ -45,6 +41,10 @@ jobs:
 
       - name: Run ESLint (JS/TS/HTML/Vue)
         continue-on-error: true
+        # ESLint 9 Requirement:
+        # We must set ESLINT_USE_FLAT_CONFIG='false' to force it to read .eslintrc.json
+        env:
+          ESLINT_USE_FLAT_CONFIG: 'false'
         run: |
           npx eslint "./target-code/**/*.{js,jsx,ts,tsx,vue,html}" \
             --config .eslintrc.json \
@@ -62,8 +62,8 @@ jobs:
 
       - name: Generate JSON Data
         env:
-          TARGET_REPO_URL: ${{ github.event.inputs.target_repo_url }}
-          TARGET_BRANCH: ${{ github.event.inputs.target_branch }}
+          TARGET_REPO_URL: ${{ inputs.target_repo_url }}
+          TARGET_BRANCH: ${{ inputs.target_branch }}
         run: node map-wcag.js
 
       - name: Generate HTML Report
