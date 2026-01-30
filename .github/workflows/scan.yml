@@ -26,8 +26,12 @@ jobs:
           node-version: '20'
 
       - name: Install Scanner Engine
-        # Clean modern install
-        run: npm install
+        # 1. Install dependencies from package.json
+        # 2. Force install 'stylelint-a11y' (missing in your package.json)
+        # 3. Force 'eslint@8' (to support your .eslintrc.json legacy format)
+        run: |
+          npm install
+          npm install stylelint-a11y eslint@8.57.0 --save-dev
 
       - name: Clone Target Repository
         run: |
@@ -42,19 +46,15 @@ jobs:
       - name: Run ESLint (JS/TS/HTML/Vue)
         continue-on-error: true
         run: |
-          npx eslint ./target-code \
-            --no-eslintrc \
+          npx eslint "./target-code/**/*.{js,jsx,ts,tsx,vue,html}" \
             --config .eslintrc.json \
-            --ext .js,.jsx,.ts,.tsx,.vue,.html \
-            --resolve-plugins-relative-to . \
             --format json \
-            --o eslint-raw.json
+            --output-file eslint-raw.json
 
       - name: Run Stylelint (CSS/SCSS)
         continue-on-error: true
         run: |
-          # Use -o (output file) instead of > to prevent corruption from logs
-          npx stylelint "./target-code/**/*.{css,scss,sass,less}" \
+          npx stylelint "./target-code/**/*.{css,scss,sass,less,vue}" \
             --config .stylelintrc.json \
             --formatter json \
             --output-file stylelint-raw.json \
