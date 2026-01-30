@@ -39,13 +39,10 @@ jobs:
             git clone --depth 1 ${{ inputs.target_repo_url }} ./target-code
           fi
 
-      - name: Run ESLint (JS/TS/HTML/Vue)
+      - name: Run LintA11y CLI
         continue-on-error: true
         run: |
-          npx eslint "./target-code/**/*.{js,jsx,ts,tsx,vue,html}" \
-            --config eslint.config.js \
-            --format json \
-            --output-file eslint-raw.json
+          node ./cli.js
 
       - name: Run Stylelint (CSS/SCSS)
         continue-on-error: true
