@@ -30,7 +30,7 @@
     // 2. ANGULAR (Templates)
     // ----------------------------------------------------------------------
     {
-      "files": ["*.html"],
+      "files": ["**/*.component.html", "**/*.template.html"],
       "parser": "@angular-eslint/template-parser",
       "plugins": ["@angular-eslint/template"],
       "extends": [
@@ -48,6 +48,17 @@
         // Added missing rule
         "@angular-eslint/template/button-has-type": "error"
       }
+    },
+
+    // ----------------------------------------------------------------------
+    // 2b. GENERIC HTML (Non-Angular)
+    // ----------------------------------------------------------------------
+    {
+      "files": ["**/*.html"],
+      "excludedFiles": ["**/*.component.html", "**/*.template.html"],
+      "parser": "@html-eslint/parser",
+      "plugins": ["@html-eslint"],
+      "extends": ["plugin:@html-eslint/recommended"]
     },
 
     // ----------------------------------------------------------------------
