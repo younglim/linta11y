@@ -1,7 +1,9 @@
 {
-  "name": "modern-a11y-scanner",
-  "version": "2.0.0",
-  "private": true,
+  "name": "linta11y",
+  "version": "0.0.1",
+  "author": "younglim",
+  "license": "MIT",
+  "description": "Universal accessibility scanner that lints remote repositories and produces JSON/HTML reports.",
   "scripts": {
     "scan": "echo 'Run via workflow'",
     "test": "eslint \"./target-code/**/*.{js,jsx,ts,tsx,vue,html}\" --config eslint.config.js --format json --output-file eslint-raw.json"
