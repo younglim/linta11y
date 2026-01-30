@@ -25,53 +25,47 @@ This project runs a multi-engine scan supporting the following technologies:
 
 ## 🎯 Test Repositories & Benchmarks
 
-The following repositories are curated to benchmark the scanner's capabilities. They are excellent test choices because they contain **deliberate, documented accessibility failures** across different technologies.
+The following repositories are curated for testing the scanner across different technologies.
 
 > **⚠️ Note for Testers:** When scanning these repositories, look for branches named `start`, `exercise`, or `get-started`. The `main` branch often contains the "fixed" code and may return 0 results.
 
 ### 1. Mobile & Native
 
 * **[Lemoncode/react-native-accessibility](https://github.com/Lemoncode/react-native-accessibility)**
-* **Why it's a good test:** This repo is specific to **Mobile Accessibility**. It contains failures unique to the mobile ecosystem that web scanners usually miss.
-* **What to expect:** Missing `accessibilityLabel` on `<Image>` components, touchable areas that are too small, and improper usage of the `accessibilityRole` prop.
-
-
+* **Why it's a good test:** This repo is specific to **Mobile Accessibility**.
 
 ### 2. Vue.js Ecosystem
 
 * **[vueschool/accessibility-fundamentals](https://github.com/vueschool/accessibility-fundamentals)**
 * **Why it's a good test:** Created for an educational course, this codebase demonstrates common pitfalls in **Vue templates**.
-* **What to expect:** Custom form controls built without semantic HTML, mouse events (`@mouseover`) without keyboard equivalents, and missing labels on inputs bound via `v-model`.
-
-
 
 ### 3. The "Gold Standard" (HTML)
 
 * **[alphagov/accessibility-tool-audit](https://github.com/alphagov/accessibility-tool-audit)**
 * **Why it's a good test:** Maintained by the UK Government Digital Service (GDS), this is a massive collection of raw HTML files specifically designed to test automated scanners.
-* **What to expect:** It contains nearly every possible WCAG failure detectable by static analysis, including duplicate IDs, skipped heading levels, and invalid ARIA attributes.
-
-
 
 ### 4. React Patterns
 
 * **[reactjs/react-a11y](https://github.com/reactjs/react-a11y)** & **[marcysutton/js-a11y-workshop](https://github.com/marcysutton/js-a11y-workshop)**
 * **Why they are good tests:** Marcy Sutton is a leading expert in the field. Her workshop repo moves beyond basic HTML tags and introduces complex **JavaScript interaction bugs**.
-* **What to expect:** "Ghost buttons" (divs with click handlers but no keyboard support), focus traps in modals, and dynamic content updates that lack `aria-live` regions.
-
-
 
 ### 5. Angular Architecture
 
 * **[googlecodelabs/angular-accessibility](https://github.com/googlecodelabs/angular-accessibility)**
 * **Why it's a good test:** This is Google's official workshop. It creates a "broken" shop application to demonstrate Angular-specific accessibility APIs.
 * **Target Branch:** Scan the `get-started` branch.
-* **What to expect:** Custom Angular components (e.g., `<counter-input>`) that lack ARIA roles, and `(click)` events bound to non-interactive elements without corresponding key events.
-
-
 
 ### 6. Visual & CSS Failures
 
 * **[5t3ph/a11y-fails](https://github.com/5t3ph/a11y-fails)**
 * **Why it's a good test:** Most accessibility scanners only look at HTML structure. This repo focuses on **CSS/Visual failures** that require a stylesheet parser.
-* **What to expect:** Flexbox ordering that creates a disconnect between visual and DOM order, removal of focus indicators (`outline: none`), and content hidden improperly using `display: none` versus visually-hidden patterns.
+
+## 🧰 Global CLI
+
+Install globally and run from any folder (expects `./target-code` to exist):
+
+```bash
+npm i -g linta11y
+linta11y
+```
+

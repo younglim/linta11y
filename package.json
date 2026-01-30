@@ -3,7 +3,11 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
-    "scan": "echo 'Run via workflow'"
+    "scan": "echo 'Run via workflow'",
+    "test": "eslint \"./target-code/**/*.{js,jsx,ts,tsx,vue,html}\" --config eslint.config.js --format json --output-file eslint-raw.json"
+  },
+  "bin": {
+    "linta11y": "./cli.js"
   },
   "devDependencies": {
     "@angular-eslint/eslint-plugin": "^17.3.0",
