@@ -3,6 +3,9 @@
     "stylelint-config-recommended",
     "stylelint-config-recommended-scss"
   ],
+  "plugins": [
+    "stylelint-a11y"
+  ],
   "rules": {
     "declaration-property-value-disallowed-list": {
       "outline": ["none", "0"],
@@ -15,6 +18,12 @@
     },
     "font-family-no-missing-generic-family-keyword": true,
     "no-descending-specificity": null,
-    "selector-class-pattern": null
+    "selector-class-pattern": null,
+    "a11y/no-outline-none": true,
+    "a11y/media-prefers-reduced-motion": true,
+    "a11y/content-property-no-static-value": [true, { "severity": "warning" }],
+    "a11y/font-size-is-readable": [true, { "severity": "warning" }],
+    "a11y/selector-pseudo-class-focus": true,
+    "a11y/no-text-align-justify": true
   }
 }

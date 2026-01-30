@@ -9,7 +9,6 @@ const metadata = {
 };
 
 // 2. STRICT RULE ALLOWLIST
-// Only rules mapping to specific WCAG criteria are allowed.
 const ruleMap = {
   // ===========================================================================
   // 📱 REACT NATIVE (Mobile A11y)
@@ -23,6 +22,8 @@ const ruleMap = {
   'react-native-a11y/has-valid-accessibility-state': 'WCAG 4.1.2 (Name, Role, Value)',
   'react-native-a11y/has-valid-accessibility-value': 'WCAG 4.1.2 (Name, Role, Value)',
   'react-native-a11y/no-nested-touchables': 'WCAG 2.5.2 (Pointer Cancellation)',
+  'react-native-a11y/has-valid-important-for-accessibility': 'WCAG 4.1.2 (Name, Role, Value) [Android]',
+  'react-native-a11y/has-valid-accessibility-ignores-invert-colors': 'WCAG 1.4.1 (Use of Color) [iOS]',
 
   // ===========================================================================
   // 🅰️ ANGULAR (Templates)
@@ -39,6 +40,7 @@ const ruleMap = {
   '@angular-eslint/template/role-has-required-aria': 'WCAG 4.1.2 (Name, Role, Value)',
   '@angular-eslint/template/table-scope': 'WCAG 1.3.1 (Info and Relationships)',
   '@angular-eslint/template/valid-aria': 'WCAG 4.1.2 (Name, Role, Value)',
+  '@angular-eslint/template/button-has-type': 'WCAG 3.2.2 (On Input)', 
 
   // ===========================================================================
   // ⚛️ REACT (Web JSX)
@@ -104,11 +106,23 @@ const ruleMap = {
   'vuejs-accessibility/no-static-element-interactions': 'WCAG 4.1.2 (Name, Role, Value)',
   'vuejs-accessibility/role-has-required-aria-props': 'WCAG 4.1.2 (Name, Role, Value)',
   'vuejs-accessibility/tabindex-no-positive': 'WCAG 2.4.3 (Focus Order)',
+  'vuejs-accessibility/no-aria-hidden-on-focusable': 'WCAG 4.1.2 (Name, Role, Value)',
+  'vuejs-accessibility/no-role-presentation-on-focusable': 'WCAG 1.3.1 (Info and Relationships)',
 
   // ===========================================================================
-  // 🎨 CSS / SCSS (Stylelint)
+  // 🎨 CSS / SCSS (Stylelint A11y) - REQUIRED: stylelint-a11y
   // ===========================================================================
-  'declaration-property-value-disallowed-list': 'WCAG 2.4.7 (Focus Visible) / 1.4.8 (Visual)',
+  'a11y/no-outline-none': 'WCAG 2.4.7 (Focus Visible)',
+  'a11y/media-prefers-reduced-motion': 'WCAG 2.3.3 (Animation from Interactions)',
+  'a11y/content-property-no-static-value': 'WCAG 1.3.1 (Info and Relationships)',
+  'a11y/font-size-is-readable': 'WCAG 1.4.4 (Resize Text)',
+  'a11y/selector-pseudo-class-focus': 'WCAG 2.4.7 (Focus Visible)',
+  'a11y/no-obsolete-attribute': 'WCAG 4.1.1 (Parsing)',
+  'a11y/no-text-align-justify': 'WCAG 1.4.8 (Visual Presentation)',
+  'a11y/no-display-none': 'WCAG 4.1.2 (Name, Role, Value) [Warning only]',
+  
+  // Keep these legacy ones if you want, but they are less specific?
+  'declaration-property-value-disallowed-list': 'WCAG 2.4.7 (Focus Visible)',
   'declaration-property-unit-disallowed-list': 'WCAG 1.4.4 (Resize Text)',
   'font-family-no-missing-generic-family-keyword': 'Best Practice (Fallback Fonts)'
 };
@@ -119,7 +133,8 @@ const getFramework = (ruleId) => {
   if (ruleId.startsWith('jsx-a11y')) return 'React (Web)';
   if (ruleId.startsWith('@angular')) return 'Angular';
   if (ruleId.startsWith('vue')) return 'Vue.js';
-  if (ruleId.startsWith('declaration-property') || ruleId.startsWith('font-')) return 'CSS/Styles';
+  // [NEW] Better detection for stylelint-a11y
+  if (ruleId.startsWith('a11y/') || ruleId.startsWith('declaration-property') || ruleId.startsWith('font-')) return 'CSS/Styles';
   return 'General';
 };
 
@@ -147,7 +162,6 @@ const allFiles = [...eslintRaw, ...normalizedStylelint];
 const unmappedRules = new Set();
 
 const violations = allFiles.map(f => {
-   // STRICT FILTER: If ruleId is NOT in ruleMap, return false (discard it).
    const validMsgs = f.messages.filter(m => {
      if (ruleMap[m.ruleId]) return true;
      unmappedRules.add(m.ruleId);
@@ -160,19 +174,17 @@ const violations = allFiles.map(f => {
    f.messages = validMsgs.map(m => ({
      ...m,
      wcagClause: ruleMap[m.ruleId],
-     framework: getFramework(m.ruleId) // ✅ Added Framework detection
+     framework: getFramework(m.ruleId)
    }));
    return f;
 }).filter(Boolean);
 
-// DEBUG LOG: Shows what was filtered out (useful to ensure we aren't dropping valid a11y rules)
 if (unmappedRules.size > 0) {
   console.log("\n⚠️  FILTERED OUT (Non-mapped rules):");
   unmappedRules.forEach(r => console.log(`   - ${r}`));
   console.log("\n");
 }
 
-// 3. WRITE OUTPUT (Structure: { metadata, violations })
 const finalReport = {
   metadata: metadata,
   violations: violations

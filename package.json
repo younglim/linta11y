@@ -6,29 +6,24 @@
     "scan": "echo 'Run via workflow'"
   },
   "devDependencies": {
-    "eslint": "^8.57.0",
-    "typescript": "^5.4.0",
-    "@typescript-eslint/parser": "^7.0.0",
-    "@typescript-eslint/eslint-plugin": "^7.0.0",
-    
-    "eslint-plugin-react": "^7.34.0",
-    "eslint-plugin-jsx-a11y": "^6.8.0",
-    "eslint-plugin-react-native-a11y": "^3.3.0",
-    
-    "eslint-plugin-vue": "^9.25.0",
-    "eslint-plugin-vuejs-accessibility": "^2.3.0",
-    "vue-eslint-parser": "^9.4.0",
-    
     "@angular-eslint/eslint-plugin": "^17.3.0",
     "@angular-eslint/eslint-plugin-template": "^17.3.0",
     "@angular-eslint/template-parser": "^17.3.0",
-    
     "@html-eslint/eslint-plugin": "^0.24.0",
     "@html-eslint/parser": "^0.24.0",
-    
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^9.39.2",
+    "eslint-plugin-jsx-a11y": "^6.8.0",
+    "eslint-plugin-react": "^7.34.0",
+    "eslint-plugin-react-native-a11y": "^3.3.0",
+    "eslint-plugin-vue": "^9.25.0",
+    "eslint-plugin-vuejs-accessibility": "^2.3.0",
+    "postcss": "^8.4.38",
     "stylelint": "^16.3.0",
     "stylelint-config-standard": "^36.0.0",
     "stylelint-config-standard-scss": "^13.0.0",
-    "postcss": "^8.4.38"
+    "typescript": "^5.4.0",
+    "vue-eslint-parser": "^9.4.0"
   }
 }

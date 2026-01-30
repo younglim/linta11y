@@ -11,18 +11,18 @@
       "parserOptions": { "ecmaVersion": 2020, "sourceType": "module", "ecmaFeatures": { "jsx": true } },
       "plugins": ["jsx-a11y", "react", "react-native-a11y", "@typescript-eslint"],
       "extends": [
-        // WEB: Enforce strict WCAG rules for React
         "plugin:jsx-a11y/strict",
-        // MOBILE: Enforce all available checks for React Native
         "plugin:react-native-a11y/all"
       ],
       "rules": {
         "react/jsx-uses-react": "off",
         "react/react-in-jsx-scope": "off",
         
-        // Ensure these critical Mobile A11y rules are Errors (not warnings)
+        // CRITICAL MOBILE A11Y
         "react-native-a11y/has-accessibility-hint": "error",
-        "react-native-a11y/has-valid-accessibility-descriptors": "error"
+        "react-native-a11y/has-valid-accessibility-descriptors": "error",
+        "react-native-a11y/has-valid-important-for-accessibility": "error",
+        "react-native-a11y/has-valid-accessibility-ignores-invert-colors": "error"
       }
     },
 
@@ -37,7 +37,6 @@
         "plugin:@angular-eslint/template/accessibility"
       ],
       "rules": {
-        // Elevate all warnings to Errors
         "@angular-eslint/template/alt-text": "error",
         "@angular-eslint/template/elements-content": "error",
         "@angular-eslint/template/valid-aria": "error",
@@ -45,7 +44,9 @@
         "@angular-eslint/template/mouse-events-have-key-events": "error",
         "@angular-eslint/template/label-has-associated-control": "error",
         "@angular-eslint/template/role-has-required-aria": "error",
-        "@angular-eslint/template/table-scope": "error"
+        "@angular-eslint/template/table-scope": "error",
+        // Added missing rule
+        "@angular-eslint/template/button-has-type": "error"
       }
     },
 
@@ -57,7 +58,12 @@
       "parser": "vue-eslint-parser",
       "parserOptions": { "parser": "@typescript-eslint/parser", "extraFileExtensions": [".vue"] },
       "plugins": ["vue", "vuejs-accessibility"],
-      "extends": ["plugin:vue/essential", "plugin:vuejs-accessibility/recommended"]
+      "extends": ["plugin:vue/essential", "plugin:vuejs-accessibility/recommended"],
+      "rules": {
+         // Explicitly enable missing Vue rules
+         "vuejs-accessibility/no-aria-hidden-on-focusable": "error",
+         "vuejs-accessibility/no-role-presentation-on-focusable": "error"
+      }
     }
   ]
 }
