@@ -46,15 +46,6 @@ jobs:
         run: |
           node ./cli.js --oobee --debug --oobee-sitemap ./.oobee-sitemap.xml --target ./target-code
 
-      - name: Run Stylelint (CSS/SCSS)
-        continue-on-error: true
-        run: |
-          npx stylelint "./target-code/**/*.{css,scss,sass,less,vue}" \
-            --config .stylelintrc.json \
-            --formatter json \
-            --output-file stylelint-raw.json \
-            --allow-empty-input || true
-
       - name: Generate JSON Data
         env:
           TARGET_REPO_URL: ${{ inputs.target_repo_url }}

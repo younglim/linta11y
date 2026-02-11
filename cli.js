@@ -3,6 +3,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync, spawn } = require('node:child_process');
 const { pathToFileURL } = require('node:url');
+const { exec } = require('node:child_process');
+const util = require('node:util');
+const execPromise = util.promisify(exec);
 
 const cwd = process.cwd();
 const pkgRoot = path.resolve(__dirname);
@@ -26,12 +29,18 @@ const runOobee = args.includes('--oobee') || process.env.LINTA11Y_OOBEE === '1';
 const sitemapPath = path.resolve(cwd, getArg('--oobee-sitemap') || '.oobee-sitemap.xml');
 
 const eslintBin = path.join(pkgRoot, 'node_modules', '.bin', process.platform === 'win32' ? 'eslint.cmd' : 'eslint');
+const stylelintBin = path.join(pkgRoot, 'node_modules', '.bin', process.platform === 'win32' ? 'stylelint.cmd' : 'stylelint');
+
 const eslintConfig = path.join(pkgRoot, 'eslint.config.js');
+const stylelintConfig = path.join(pkgRoot, '.stylelintrc.json');
+
 const outputFile = path.join(cwd, 'eslint-raw.json');
+const stylelintOutputFile = path.join(cwd, 'stylelint-raw.json');
 const oobeeRawFile = path.join(cwd, 'oobee-raw.json');
 
 const toPosix = (p) => p.split(path.sep).join('/');
 const targetGlob = `${toPosix(targetDir)}/**/*.{js,jsx,ts,tsx,vue,html,htm}`;
+const stylelintGlob = `${toPosix(targetDir)}/**/*.{css,scss,sass,less,vue}`;
 
 const runEslint = () => {
 	if (!fs.existsSync(eslintBin)) {
@@ -51,6 +60,37 @@ const runEslint = () => {
 		env: process.env
 	});
 	return result.status ?? 1;
+};
+
+const runStylelint = async () => {
+	if (!fs.existsSync(stylelintBin)) {
+		log('Stylelint binary not found. Skipping Stylelint.');
+		return 0;
+	}
+	if (!fs.existsSync(stylelintConfig)) {
+		log('Stylelint config not found at', stylelintConfig, '. Skipping.');
+		return 0;
+	}
+
+	debugLog('Stylelint target glob:', stylelintGlob);
+	
+	let stylelintResults = [];
+	try {
+		const { stdout } = await execPromise(`npx stylelint "${targetDir}/**/*.{css,scss}" --config "${path.join(__dirname, 'stylelint.config.js')}" --formatter json`);
+		// console.log(stdout); // Commented out to suppress JSON blob
+		stylelintResults = JSON.parse(stdout);
+	} catch (error) {
+		if (error.stdout) {
+			// console.log(error.stdout); // Commented out to suppress JSON blob
+			stylelintResults = JSON.parse(error.stdout);
+		} else {
+			console.error('Stylelint failed:', error);
+		}
+	}
+
+	// Stylelint returns exit code 1 if violations found, which is normal for a linter.
+	// We only care if it crashed (code 2+ usually) or failed to run.
+	return stylelintResults.length > 0 ? 1 : 0;
 };
 
 const collectHtmlFiles = (root) => {
@@ -118,7 +158,15 @@ const runReportScripts = () => {
 
 const main = async () => {
 	log('Target dir:', targetDir);
-	let exitCode = runEslint();
+	let exitCode = 0;
+	
+	const esExit = runEslint();
+	if (esExit !== 0) exitCode = 1;
+
+	const styleExit = runStylelint();
+	// We don't fail the build script purely on lint errors (code 1 or 2) validation logic, 
+	// unless execution actually crashed/failed infrastructure-wise in a way we decide is fatal.
+	// For now, allow it to proceed to Oobee.
 
 	if (runOobee) {
 		const htmlFiles = collectHtmlFiles(targetDir);
@@ -126,13 +174,14 @@ const main = async () => {
 		debugLog('Sample HTML files:', htmlFiles.slice(0, 5));
 		if (htmlFiles.length === 0) {
 			log('Skipping Oobee: no .html/.htm files found.');
-			process.exit(exitCode);
-		}
-		try {
-			await runOobeeBatchScan(htmlFiles);
-		} catch (err) {
-			console.error(err);
-			exitCode = exitCode || 1;
+			// process.exit(exitCode); // Don't exit early, generate report based on what we have
+		} else {
+			try {
+				await runOobeeBatchScan(htmlFiles);
+			} catch (err) {
+				console.error(err);
+				exitCode = 1;
+			}
 		}
 	}
 	log('Generating reports...');

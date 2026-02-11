@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { fileURLToPath } = require('node:url');
+const path = require('path'); // Add this line
 
 // 1. CAPTURE METADATA FROM ENVIRONMENT
 const metadata = {
@@ -453,3 +453,27 @@ const finalReport = {
 
 fs.writeFileSync('accessibility-report.json', JSON.stringify(finalReport, null, 2));
 console.log(`✅ Scan Complete: ${violations.length} files found with issues.`);
+
+// Read and log ESLint stats
+const eslintPath = path.join(process.cwd(), 'eslint-raw.json');
+if (fs.existsSync(eslintPath)) {
+    try {
+        const eslintRaw = JSON.parse(fs.readFileSync(eslintPath, 'utf8'));
+        const eslintCount = eslintRaw.reduce((sum, file) => sum + (file.messages || []).length, 0);
+        console.log(`ESLint Violations: ${eslintCount}`);
+    } catch (e) {
+        console.error('Could not read eslint stats:', e.message);
+    }
+}
+
+// Read and log Stylelint stats
+const stylelintPath = path.join(process.cwd(), 'stylelint-raw.json');
+if (fs.existsSync(stylelintPath)) {
+    try {
+        const stylelintRaw = JSON.parse(fs.readFileSync(stylelintPath, 'utf8'));
+        const stylelintCount = stylelintRaw.reduce((sum, file) => sum + (file.warnings || []).length, 0);
+        console.log(`Stylelint Violations: ${stylelintCount}`);
+    } catch (e) {
+        console.error('Could not read stylelint stats:', e.message);
+    }
+}
