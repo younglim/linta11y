@@ -76,7 +76,10 @@ const runStylelint = async () => {
 	
 	let stylelintResults = [];
 	try {
-		const { stdout } = await execPromise(`npx stylelint "${targetDir}/**/*.{css,scss}" --config "${path.join(__dirname, 'stylelint.config.js')}" --formatter json`);
+		const relativeConfigPath = path.relative(cwd, stylelintConfig);
+		// Use local stylelint executable to ensure compatibility with installed plugins (avoids npx version mismatch)
+		const stylelintExec = path.join(__dirname, 'node_modules', '.bin', 'stylelint');
+		const { stdout } = await execPromise(`"${stylelintExec}" "${targetDir}/**/*.{css,scss}" --config "${relativeConfigPath}" --formatter json`);
 		// console.log(stdout); // Commented out to suppress JSON blob
 		stylelintResults = JSON.parse(stdout);
 	} catch (error) {
