@@ -14,6 +14,7 @@ const reportData = fs.readFileSync(jsonPath, 'utf-8')
   .replace(/</g, '\\u003c')
   .replace(/>/g, '\\u003e');
 
+// In future, let's use EJS or something for templating if this grows more complex
 const htmlTemplate = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -184,6 +185,47 @@ const htmlTemplate = `<!DOCTYPE html>
       white-space: pre-wrap;
       word-break: break-all;
     }
+
+    /* FILTERS */
+    .filter-row { margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+    
+    details.filter-dropdown { position: relative; display: inline-block; }
+    details.filter-dropdown summary { 
+        cursor: pointer; 
+        padding: 0.5rem 1rem; 
+        background: white; 
+        border: 1px solid var(--border); 
+        border-radius: 6px; 
+        font-weight: 500;
+        list-style: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text);
+    }
+    details.filter-dropdown summary::-webkit-details-marker { display: none; }
+    details.filter-dropdown summary::after { content: "▼"; font-size: 0.7em; margin-left: auto; }
+    details.filter-dropdown[open] summary::after { content: "▲"; }
+    
+    .filter-content {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        margin-top: 0.5rem;
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        padding: 0.75rem;
+        width: 200px;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .filter-content label { display: flex; align-items: center; gap: 0.75rem; cursor: pointer; padding: 0.25rem; user-select: none; }
+    .filter-content label:hover { color: var(--primary); }
+    .filter-content input[type="checkbox"] { transform: scale(1.2); cursor: pointer; }
   </style>
 </head>
 <body>
@@ -223,6 +265,37 @@ const htmlTemplate = `<!DOCTYPE html>
         if (type === 'goodToFix') return 'tag-good-to-fix';
         if (type === 'needsReview') return 'tag-needs-review';
         return 'tag-wcag';
+    };
+
+    // FILTER LOGIC
+    const applyFilters = () => {
+        const checked = Array.from(document.querySelectorAll('.cat-filter:checked')).map(cb => cb.value);
+        const issues = document.querySelectorAll('.issue');
+        
+        issues.forEach(issue => {
+            const cat = issue.getAttribute('data-category');
+            // If the issue category is in the checked list, show it
+            if (checked.includes(cat)) {
+                issue.style.display = '';
+            } else {
+                issue.style.display = 'none';
+            }
+        });
+
+        // Hide empty file cards
+        const cards = document.querySelectorAll('.file-card');
+        
+        cards.forEach(card => {
+            const visibleIssues = Array.from(card.querySelectorAll('.issue')).filter(i => i.style.display !== 'none');
+            if (visibleIssues.length > 0) {
+                card.style.display = '';
+                // Update badge count?
+                const badge = card.querySelector('.count-badge');
+                if (badge) badge.innerText = visibleIssues.length;
+            } else {
+                card.style.display = 'none';
+            }
+        });
     };
 
     // Helper to escape HTML for display
@@ -276,6 +349,17 @@ const htmlTemplate = `<!DOCTYPE html>
               ? '✅ PASSED: No accessibility violations found.' 
               : \`❌ FAILED: Found \${totalIssues} violations in \${totalFiles} files.\`}
           </div>
+
+          <div class="filter-row">
+            <details class="filter-dropdown">
+                <summary>Filter Categories</summary>
+                <div class="filter-content">
+                    <label><input type="checkbox" class="cat-filter" value="mustFix" checked> Must Fix</label>
+                    <label><input type="checkbox" class="cat-filter" value="goodToFix" checked> Good To Fix</label>
+                    <label><input type="checkbox" class="cat-filter" value="needsReview"> Needs Review</label>
+                </div>
+            </details>
+          </div>
         </header>
       \`;
 
@@ -307,7 +391,7 @@ const htmlTemplate = `<!DOCTYPE html>
             const catClass = getCatClass(catType);
 
             html += \`
-              <div class="issue">
+              <div class="issue" data-category="\${catType}">
                 <div class="line-box">
                   <span class="line-label">Line</span>
                   <span class="line-val">\${lineVal}</span>
@@ -319,7 +403,7 @@ const htmlTemplate = `<!DOCTYPE html>
                         <span class="tag tag-wcag">\${msg.wcagClause || 'Best Practice'}</span>
                         <span class="tag tag-rule">\${ruleId}</span>
                     </div>
-                  <div class="message">\${escapeHtml(msg.message)}</div>
+                  <div class="message">\${escapeHtml(msg.message).replace(/\\n/g, '<br>')}</div>
                   
                   <div class="code-block">
                     \${msg.html ? \`
@@ -343,6 +427,14 @@ const htmlTemplate = `<!DOCTYPE html>
       }
 
       app.innerHTML = html;
+
+      // Attach Event Listeners
+      document.querySelectorAll('.cat-filter').forEach(cb => {
+        cb.addEventListener('change', applyFilters);
+      });
+      // Run once on load to respect default checked state (hiding needsReview)
+      applyFilters();
+
     } catch (err) {
       console.error(err);
       app.innerHTML = \`<pre style="white-space:pre-wrap; background:#fff3f3; border:1px solid #fecaca; padding:1rem; border-radius:8px; color:#991b1b;">Report render error: \${String(err)}</pre>\`;
