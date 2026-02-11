@@ -45,8 +45,10 @@ jobs:
           LINTA11Y_DEBUG: 1
 
       - name: Upload Report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: accessibility-report-${{ github.run_id }}
+          name: accessibility-reports
           path: |
             accessibility-report.json
+            accessibility-report.html
