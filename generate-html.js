@@ -9,7 +9,10 @@ if (!fs.existsSync(jsonPath)) {
   process.exit(1);
 }
 
-const reportData = fs.readFileSync(jsonPath, 'utf-8');
+// Read JSON and escape HTML tag characters to prevent script injection issues (e.g. </script> inside JSON)
+const reportData = fs.readFileSync(jsonPath, 'utf-8')
+  .replace(/</g, '\\u003c')
+  .replace(/>/g, '\\u003e');
 
 const htmlTemplate = `<!DOCTYPE html>
 <html lang="en">
