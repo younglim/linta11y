@@ -40,7 +40,7 @@ jobs:
           fi
 
       - name: Run Audit
-        run: node ./cli.js --oobee --debug --oobee-sitemap ./.oobee-sitemap.xml --target ./target-code
+        run: node ./cli.js --oobee --debug --target ./target-code
         env:
           LINTA11Y_DEBUG: 1
 
