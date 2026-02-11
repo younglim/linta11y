@@ -133,10 +133,42 @@ const runOobeeBatchScan = async (htmlFiles) => {
 		const batchFiles = htmlFiles.slice(i, i + batchSize);
 		const htmlStrings = batchFiles.map((f) => fs.readFileSync(f, 'utf8'));
 		debugLog(`Scanning batch ${Math.floor(i / batchSize) + 1} (${batchFiles.length} files)`);
+
 		const results = await scanHTML(htmlStrings, {
 			name: 'GovTech A11y Team',
-			email: 'lim_zui_young@tech.gov.sg'
+			email: 'accessibility@tech.gov.sg'
 		});
+
+		// Overwrite URLs: map raw-html-N back to actual file path (1-based index)
+		const fixUrl = (obj, key) => {
+			if (obj && typeof obj[key] === 'string') {
+				const match = obj[key].match(/^raw-html-(\d+)$/);
+				if (match) {
+					const idx = parseInt(match[1], 10) - 1;
+					if (idx >= 0 && idx < batchFiles.length) {
+						obj[key] = batchFiles[idx];
+					}
+				}
+			}
+		};
+
+		['mustFix', 'goodToFix', 'needsReview'].forEach(category => {
+			if (results[category] && results[category].rules) {
+				Object.values(results[category].rules).forEach(rule => {
+					if (Array.isArray(rule.items)) {
+						rule.items.forEach(item => fixUrl(item, 'url'));
+					}
+				});
+			}
+		});
+
+		if (Array.isArray(results.pages)) {
+			results.pages.forEach(p => {
+				fixUrl(p, 'url');
+				fixUrl(p, 'pageUrl');
+			});
+		}
+
 		allResults.push(results);
 	}
 	fs.writeFileSync(oobeeRawFile, JSON.stringify(allResults.length === 1 ? allResults[0] : allResults, null, 2));
