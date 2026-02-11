@@ -20,6 +20,7 @@ This project runs a multi-engine scan supporting the following technologies:
 | **Mobile** | **React Native** | `eslint-plugin-react-native-a11y` |
 | **Core Web** | **HTML** (Raw/Static) | `@html-eslint` |
 | **Styles** | **CSS, SCSS, SASS, LESS** | `stylelint-a11y` (Checks for `outline: 0`, contrast, etc.) |
+| **Dynamic HTML (Optional)** | **Oobee** (Custom rules) | Mapped if Oobee rule IDs are present |
 
 ---
 
@@ -60,6 +61,11 @@ The following repositories are curated for testing the scanner across different 
 * **[5t3ph/a11y-fails](https://github.com/5t3ph/a11y-fails)**
 * **Why it's a good test:** Most accessibility scanners only look at HTML structure. This repo focuses on **CSS/Visual failures** that require a stylesheet parser.
 
+## 🐝 Oobee (Optional HTML Scan)
+
+If you run Oobee separately, place its JSON output at `oobee-raw.json` before generating reports.  
+Mapped Oobee rule IDs will be included in the final report.
+
 ## 🧰 Global CLI
 
 Install globally and run from any folder (expects `./target-code` to exist):
@@ -67,5 +73,57 @@ Install globally and run from any folder (expects `./target-code` to exist):
 ```bash
 npm i -g linta11y
 linta11y
+```
+
+## Usage
+
+```bash
+linta11y
+```
+
+## Oobee (local HTML/HTM files)
+
+```bash
+linta11y --oobee
+# scans .html/.htm files under the target directory (default: ./target-code or cwd)
+```
+
+## Oobee (optional)
+
+```bash
+linta11y --oobee --oobee-url https://example.com
+# or: linta11y --oobee (if target/index.html exists)
+```
+
+## Run ESLint-only:
+
+```bash
+linta11y
+```
+
+## Run ESLint + Oobee (writes `oobee-raw.json`):
+
+```bash
+linta11y --oobee
+```
+
+## Oobee (local HTML/HTM via sitemap)
+
+```bash
+linta11y --oobee --debug
+# builds a local sitemap from .html/.htm files and scans it once
+# local sitemap uses file:// URLs
+```
+
+## Troubleshooting
+
+If this runs inside another repo, it does **not** install that repo’s dependencies.  
+The previous failure came from `npm install` in the target repo (e.g., `node-sass` + missing Python).
+
+### Debug Usage
+
+```bash
+linta11y --debug
+# shows detailed information about the scan process
 ```
 

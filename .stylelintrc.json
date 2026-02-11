@@ -24,6 +24,19 @@
     "a11y/content-property-no-static-value": [true, { "severity": "warning" }],
     "a11y/font-size-is-readable": [true, { "severity": "warning" }],
     "a11y/selector-pseudo-class-focus": true,
-    "a11y/no-text-align-justify": true
-  }
+    "a11y/no-text-align-justify": true,
+    "a11y/no-display-none": [true, { "severity": "warning" }]
+  },
+  "ignoreFiles": [
+    "oobee-raw.json",
+    "oobee-raw.*",
+    ".oobee-sitemap.xml",
+    "oobee-sitemap.xml",
+    "results/**",
+    "results/**/oobee-raw.json",
+    "oobee-debug.log",
+    "eslint-raw.json",
+    "stylelint-raw.json",
+    "accessibility-report.*"
+  ]
 }

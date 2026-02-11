@@ -41,8 +41,10 @@ jobs:
 
       - name: Run LintA11y CLI
         continue-on-error: true
+        env:
+          LINTA11Y_DEBUG: "1"
         run: |
-          node ./cli.js
+          node ./cli.js --oobee --debug --oobee-sitemap ./.oobee-sitemap.xml --target ./target-code
 
       - name: Run Stylelint (CSS/SCSS)
         continue-on-error: true

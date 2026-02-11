@@ -1,6 +1,11 @@
+SPDX-License-Identifier: MIT
+SPDX-FileCopyrightText: 2026-2027 Young Lim
+SPDX-FileNotice: See README for usage details.
+SPDX-FileNotice: Debug logs may be printed during scans.
+
 MIT License
 
-Copyright (c) 2026 Zui Young
+Copyright (c) 2026-2027 Young Lim
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
