@@ -81,18 +81,12 @@ linta11y
 linta11y
 ```
 
-## Oobee (local HTML/HTM files)
+## Static HTML Scan (Oobee)
+
+Use the `--oobee` flag to scan static HTML files. This recursively finds all `.html` and `.htm` files in the target directory and analyzes them alongside other checks.
 
 ```bash
 linta11y --oobee
-# scans .html/.htm files under the target directory (default: ./target-code or cwd)
-```
-
-## Oobee (optional)
-
-```bash
-linta11y --oobee --oobee-url https://example.com
-# or: linta11y --oobee (if target/index.html exists)
 ```
 
 ## Run ESLint-only:
@@ -105,14 +99,6 @@ linta11y
 
 ```bash
 linta11y --oobee
-```
-
-## Oobee (local HTML/HTM via sitemap)
-
-```bash
-linta11y --oobee --debug
-# builds a local sitemap from .html/.htm files and scans it once
-# local sitemap uses file:// URLs
 ```
 
 ## Troubleshooting
