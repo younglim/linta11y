@@ -187,24 +187,6 @@ const loadJSON = (path) => {
 const eslintRaw = loadJSON('eslint-raw.json');
 const stylelintRaw = loadJSON('stylelint-raw.json');
 
-const findOobeeRaw = (baseDir) => {
-  if (!fs.existsSync(baseDir)) return null;
-  const walk = (dir) => {
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-    for (const e of entries) {
-      const full = `${dir}/${e.name}`;
-      if (e.isDirectory()) {
-        const found = walk(full);
-        if (found) return found;
-      } else if (e.isFile() && e.name === 'oobee-raw.json') {
-        return full;
-      }
-    }
-    return null;
-  };
-  return walk(baseDir);
-};
-
 const OOBEE_RAW = 'oobee-raw.json';
 let oobeeRaw = loadJSON(OOBEE_RAW);
 
