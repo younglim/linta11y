@@ -79,6 +79,30 @@ const htmlTemplate = `<!DOCTYPE html>
       text-decoration: underline;
     }
 
+    /* VSCode Link Styling */
+    .filename a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .filename a:hover {
+      text-decoration: underline;
+    }
+    .line-box a {
+      color: inherit;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+    }
+    .line-box:hover {
+      background: #dbeafe;
+      cursor: pointer;
+    }
+
     /* STATUS BANNER */
     .status-banner {
       margin-top: 1.5rem;
@@ -236,6 +260,19 @@ const htmlTemplate = `<!DOCTYPE html>
     const DATA = ${reportData};
     const app = document.getElementById('app');
 
+    // Helper to create VSCode URL
+    const createVSCodeUrl = (filePath, line) => {
+      // Remove file:// prefix if present and normalize path
+      const normalizedPath = filePath
+        .replace(/^file:\\/\\//, '')
+        .replace(/\\\\/g, '/');
+      
+      if (line && line !== '—') {
+        return \`vscode://file\${normalizedPath}:\${line}\`;
+      }
+      return \`vscode://file\${normalizedPath}\`;
+    };
+
     // Helper to map rules to categories
     const buildRuleMap = (summary) => {
         const map = {};
@@ -368,15 +405,21 @@ const htmlTemplate = `<!DOCTYPE html>
         html += '<div style="text-align:center; padding:3rem; color:#64748b">No scannable files found or scanner failed to run.</div>';
       } else {
         violations.forEach(file => {
-          const safePath = (file.filePath || 'Unknown Source')
+          const rawPath = file.filePath || 'Unknown Source';
+          const safePath = rawPath
             .replace(/^file:\\/\\//, '')
             .replace(/\\\\/g, '/')
             .replace(/\\.oobee-sitemap\\.xml$/i, 'Local Sitemap');
 
+          const vscodeUrl = createVSCodeUrl(rawPath);
+          const fileNameDisplay = safePath.includes('Unknown') || safePath.includes('Local Sitemap')
+            ? safePath
+            : \`<a href="\${vscodeUrl}" title="Open in VSCode">\${safePath}</a>\`;
+
           html += \`
             <div class="file-card">
               <div class="file-header">
-                <span class="filename">\${safePath}</span>
+                <span class="filename">\${fileNameDisplay}</span>
                 <span class="count-badge">\${file.messages.length}</span>
               </div>
               \`;
@@ -390,11 +433,20 @@ const htmlTemplate = `<!DOCTYPE html>
             const catLabel = getCatLabel(catType);
             const catClass = getCatClass(catType);
 
+            // Create VSCode link for line number
+            const vscodeLineUrl = createVSCodeUrl(rawPath, msg.line);
+            const lineBoxContent = lineVal !== '—' && !safePath.includes('Unknown') && !safePath.includes('Local Sitemap')
+              ? \`<a href="\${vscodeLineUrl}" title="Open in VSCode at line \${lineVal}">
+                  <span class="line-label">Line</span>
+                  <span class="line-val">\${lineVal}</span>
+                </a>\`
+              : \`<span class="line-label">Line</span>
+                <span class="line-val">\${lineVal}</span>\`;
+
             html += \`
               <div class="issue" data-category="\${catType}">
                 <div class="line-box">
-                  <span class="line-label">Line</span>
-                  <span class="line-val">\${lineVal}</span>
+                  \${lineBoxContent}
                 </div>
                 <div class="content">
                     <div class="tags">
