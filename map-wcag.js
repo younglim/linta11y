@@ -3,13 +3,15 @@ const path = require('path');
 const { fileURLToPath } = require('url'); // Add this line
 
 // 1. CAPTURE METADATA FROM ENVIRONMENT
-const metadata = {
-  repositoryUrl: process.env.TARGET_REPO_URL || 'Unknown Repository',
-  branch: process.env.TARGET_BRANCH || 'Default',
-  scanDate: new Date().toLocaleString(),
-  commitHash: process.env.GITHUB_SHA || 'N/A'
+const getMetadata = () => {
+    return {
+        repositoryUrl: process.env.TARGET_REPO_URL || 'Unknown Repository',
+        branch: process.env.TARGET_BRANCH || 'Default',
+        scanDate: new Date().toLocaleString(),
+        commitHash: process.env.GITHUB_SHA || 'N/A',
+        reportGeneratedAt: new Date().toISOString()
+    };
 };
-metadata.reportGeneratedAt = new Date().toISOString();
 
 // 2. STRICT RULE ALLOWLIST
 const ruleMap = {
@@ -178,20 +180,10 @@ const parseWcagTag = (tag) => {
   return { tag, level: null, clause, formatted: formatWcagId(tag) };
 };
 
-const loadJSON = (path) => {
-   if (!fs.existsSync(path)) { return []; }
-   try { return JSON.parse(fs.readFileSync(path, 'utf8')); } 
-   catch (e) { return []; }
-};
-
-const eslintRaw = loadJSON('eslint-raw.json');
-const stylelintRaw = loadJSON('stylelint-raw.json');
-
-const OOBEE_RAW = 'oobee-raw.json';
-let oobeeRaw = loadJSON(OOBEE_RAW);
+// MOVED: logic for loading JSON is now inside execution block or passed as args
 
 // RESTORE: Definitions needed for report generation
-const normalizedStylelint = stylelintRaw.map(file => ({
+const normalizeStylelintData = (stylelintRaw) => stylelintRaw.map(file => ({
   filePath: file.source.split('/target-code/')[1] || file.source,
   messages: file.warnings.map(w => ({
     ruleId: w.rule,
@@ -271,8 +263,6 @@ const normalizeOobee = (raw) => {
     return { filePath, messages };
   }).filter(Boolean);
 };
-
-const normalizedOobee = normalizeOobee(oobeeRaw);
 
 // Create mapping of oobee rules to WCAG clauses
 const oobeeRuleToWcagMap = new Map();
@@ -406,98 +396,109 @@ const mergeOobeeSummaries = (list) => {
   return merged;
 };
 
-const oobeeSummary = Array.isArray(oobeeRaw) && oobeeRaw.every(isOobeeSummary)
-  ? mergeOobeeSummaries(oobeeRaw)
-  : (isOobeeSummary(oobeeRaw) ? normalizeOobeeSummary(oobeeRaw) : buildOobeeSummary(oobeeRaw));
+// CORE FUNCTION: Generate Report Object
+function generateReport(eslintRaw, stylelintRaw, oobeeRaw, options = {}) {
+    const metadata = options.metadata || getMetadata();
+    
+    // Reset map for clean run
+    oobeeRuleToWcagMap.clear();
 
-// POST-PROCESS: Populate WCAG Map from the final summary
-if (oobeeSummary) {
-  ['mustFix', 'goodToFix', 'needsReview'].forEach(bucket => {
-    if (!oobeeSummary[bucket] || !oobeeSummary[bucket].rules) return;
-    Object.entries(oobeeSummary[bucket].rules).forEach(([ruleId, rule]) => {
-      processRuleForWcagMap(ruleId, rule);
-    });
-  });
-}
+    const normalizedStylelint = normalizeStylelintData(stylelintRaw || []);
+    const normalizedOobee = normalizeOobee(oobeeRaw);
 
-if (oobeeSummary) {
-  console.log('[map-wcag] oobee summary totals:', {
-    mustFix: oobeeSummary.mustFix?.totalItems || 0,
-    goodToFix: oobeeSummary.goodToFix?.totalItems || 0,
-    needsReview: oobeeSummary.needsReview?.totalItems || 0
-  });
-}
+    const oobeeSummary = Array.isArray(oobeeRaw) && oobeeRaw.every(isOobeeSummary)
+      ? mergeOobeeSummaries(oobeeRaw)
+      : (isOobeeSummary(oobeeRaw) ? normalizeOobeeSummary(oobeeRaw) : buildOobeeSummary(oobeeRaw));
 
-const allFiles = [...eslintRaw, ...normalizedStylelint, ...normalizedOobee];
-const unmappedRules = new Set();
-
-const getWcagClause = (ruleId) => {
-  if (ruleMap[ruleId]) return ruleMap[ruleId];
-  if (ruleId.startsWith('oobee-')) {
-    const cleanRuleId = ruleId.replace('oobee-', '');
-    const mapped = oobeeRuleToWcagMap.get(cleanRuleId);
-    if (mapped) return mapped;
-    return 'Oobee (Unmapped Rule)';
-  }
-  return null;
-};
-
-const violations = allFiles.map(f => {
-  const messages = Array.isArray(f.messages) ? f.messages : [];
-  const validMsgs = messages
-    .map(m => ({ ...m, wcagClause: getWcagClause(m.ruleId || '') }))
-    .filter(m => {
-      if (m.wcagClause) return true;
-      if (m.ruleId) unmappedRules.add(m.ruleId);
-      return false;
-    });
-
-  if (validMsgs.length === 0) return null;
-
-  const normalizedPath = normalizeFilePath(f.filePath);
-  f.filePath = (normalizedPath || '').split('/target-code/')[1] || normalizedPath || 'Unknown Source';
-  f.messages = validMsgs.map(m => ({
-    ...m,
-    framework: getFramework(m.ruleId || '')
-  }));
-  return f;
-}).filter(Boolean);
-
-if (unmappedRules.size > 0) {
-  console.log("\n⚠️  FILTERED OUT (Non-mapped rules):");
-  unmappedRules.forEach(r => console.log(`   - ${r}`));
-  console.log("\n");
-}
-
-const finalReport = {
-  metadata: metadata,
-  violations: violations,
-  oobeeSummary: oobeeSummary
-};
-
-fs.writeFileSync('accessibility-report.json', JSON.stringify(finalReport, null, 2));
-console.log(`✅ Scan Complete: ${violations.length} files found with issues.`);
-
-// Read and log ESLint stats
-const eslintPath = path.join(process.cwd(), 'eslint-raw.json');
-if (fs.existsSync(eslintPath)) {
-    try {
-        const eslintRaw = JSON.parse(fs.readFileSync(eslintPath, 'utf8'));
-        const eslintCount = eslintRaw.reduce((sum, file) => sum + (file.messages || []).length, 0);
-        console.log(`ESLint Violations: ${eslintCount}`);
-    } catch (e) {
-        console.error('Could not read eslint stats:', e.message);
+    // POST-PROCESS: Populate WCAG Map from the final summary
+    if (oobeeSummary) {
+      ['mustFix', 'goodToFix', 'needsReview'].forEach(bucket => {
+        if (!oobeeSummary[bucket] || !oobeeSummary[bucket].rules) return;
+        Object.entries(oobeeSummary[bucket].rules).forEach(([ruleId, rule]) => {
+          processRuleForWcagMap(ruleId, rule);
+        });
+      });
     }
+
+    if (oobeeSummary && options.log !== false) {
+      console.log('[map-wcag] oobee summary totals:', {
+        mustFix: oobeeSummary.mustFix?.totalItems || 0,
+        goodToFix: oobeeSummary.goodToFix?.totalItems || 0,
+        needsReview: oobeeSummary.needsReview?.totalItems || 0
+      });
+    }
+
+    const allFiles = [...(eslintRaw || []), ...normalizedStylelint, ...normalizedOobee];
+    const unmappedRules = new Set();
+
+    const getWcagClause = (ruleId) => {
+      if (ruleMap[ruleId]) return ruleMap[ruleId];
+      if (ruleId.startsWith('oobee-')) {
+        const cleanRuleId = ruleId.replace('oobee-', '');
+        const mapped = oobeeRuleToWcagMap.get(cleanRuleId);
+        if (mapped) return mapped;
+        return 'Oobee (Unmapped Rule)';
+      }
+      return null;
+    };
+
+    const violations = allFiles.map(f => {
+      const messages = Array.isArray(f.messages) ? f.messages : [];
+      const validMsgs = messages
+        .map(m => ({ ...m, wcagClause: getWcagClause(m.ruleId || '') }))
+        .filter(m => {
+          if (m.wcagClause) return true;
+          if (m.ruleId) unmappedRules.add(m.ruleId);
+          return false;
+        });
+
+      if (validMsgs.length === 0) return null;
+
+      const normalizedPath = normalizeFilePath(f.filePath);
+      f.filePath = (normalizedPath || '').split('/target-code/')[1] || normalizedPath || 'Unknown Source';
+      f.messages = validMsgs.map(m => ({
+        ...m,
+        framework: getFramework(m.ruleId || '')
+      }));
+      return f;
+    }).filter(Boolean);
+
+    if (unmappedRules.size > 0 && options.log !== false) {
+      console.log("\n⚠️  FILTERED OUT (Non-mapped rules):");
+      unmappedRules.forEach(r => console.log(`   - ${r}`));
+      console.log("\n");
+    }
+
+    return {
+      metadata: metadata,
+      violations: violations,
+      oobeeSummary: oobeeSummary
+    };
 }
 
-// Read and log Stylelint stats
-const stylelintPath = path.join(process.cwd(), 'stylelint-raw.json');
-if (fs.existsSync(stylelintPath)) {
-    try {
-        const stylelintRaw = JSON.parse(fs.readFileSync(stylelintPath, 'utf8'));
-        const stylelintCount = stylelintRaw.reduce((sum, file) => sum + (file.warnings || []).length, 0);
-        console.log(`Stylelint Violations: ${stylelintCount}`);
-    } catch (e) {
-        console.error('Could not read stylelint stats:', e.message);
-    }
+// SCRIPT EXECUTION
+if (require.main === module) {
+    const loadJSON = (path) => {
+       if (!fs.existsSync(path)) { return []; }
+       try { return JSON.parse(fs.readFileSync(path, 'utf8')); } 
+       catch (e) { return []; }
+    };
+
+    const eslintRaw = loadJSON('eslint-raw.json');
+    const stylelintRaw = loadJSON('stylelint-raw.json');
+    const oobeeRaw = loadJSON('oobee-raw.json');
+
+    const finalReport = generateReport(eslintRaw, stylelintRaw, oobeeRaw);
+
+    fs.writeFileSync('accessibility-report.json', JSON.stringify(finalReport, null, 2));
+    console.log(`✅ Scan Complete: ${finalReport.violations.length} files found with issues.`);
+    
+    // Log stats logic mostly remains the same, just checking the input arrays
+    const eslintCount = eslintRaw.reduce((sum, file) => sum + (file.messages || []).length, 0);
+    console.log(`ESLint Violations: ${eslintCount}`);
+
+    const stylelintCount = stylelintRaw.reduce((sum, file) => sum + (file.warnings || []).length, 0);
+    console.log(`Stylelint Violations: ${stylelintCount}`);
 }
+
+module.exports = { generateReport };

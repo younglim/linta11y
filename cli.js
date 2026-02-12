@@ -84,8 +84,20 @@ const runStylelint = async () => {
 	} catch (error) {
 		if (error.stdout) {
 			// console.log(error.stdout); // Commented out to suppress JSON blob
-			stylelintResults = JSON.parse(error.stdout);
-		} else {
+			try {
+				stylelintResults = JSON.parse(error.stdout);
+			} catch (e) {
+				// If stdout isn't JSON, it might be a different error, fallback to stderr check
+			}
+		} 
+		
+		// If no results parsed yet, check if it's just a "No files found" error
+		if (stylelintResults.length === 0) {
+			const errorMsg = error.stderr || error.message || '';
+			if (errorMsg.includes('No files matching the pattern')) {
+				debugLog('Stylelint found no CSS/SCSS files.');
+				return 0; // Not a failure, just empty
+			}
 			console.error('Stylelint failed:', error);
 		}
 	}
