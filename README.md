@@ -1,12 +1,76 @@
-# linta11y
+# LintA11y
 
-**Tally accessibility issues by linting remote repositories.**
+A comprehensive accessibility linter aggregating results from ESLint (React/Angular/Vue/RN), Stylelint (CSS), and Oobee (HTML).
 
-## 📖 What is this?
+## CLI Usage
 
-`linta11y` is a **Universal Accessibility Scanner** designed to perform static analysis on remote codebases. Unlike dynamic scanners (which check the rendered DOM in a browser), `linta11y` analyzes the **source code** directly.
+You can run the linter directly from the command line.
 
-It uses a "Golden Set" of linting engines to detect accessibility violations, bad practices, and missing attributes across almost any modern frontend framework. It normalizes these findings into a single JSON report and maps specific technical failures to **WCAG 2.1** compliance clauses.
+```bash
+# Scan current directory (or ./target-code if it exists)
+node cli.js
+
+# Scan a specific directory
+node cli.js --target ./my-project/src
+
+# Disable HTML scanning (Oobee)
+node cli.js --no-oobee
+
+# Enable debug logging
+node cli.js --debug
+```
+
+### Options
+
+| Flag | Alias | Description |
+|------|-------|-------------|
+| `--target` | `-t` | Directory to scan. Defaults to `./target-code` or current working directory. |
+| `--no-oobee` | | Disable extensive HTML scanning using Oobee (Enabled by default). |
+| `--debug` | | Enable verbose logging for debugging purposes. |
+
+## Programmatic Usage (Node.js API)
+
+You can import the scanner into your own Node.js scripts using the exported `scanDir` function.
+
+```javascript
+const { scanDir } = require('./npmIndex');
+const path = require('path');
+
+async function runScan() {
+    const targetDir = path.resolve(__dirname, 'src');
+
+    try {
+        const report = await scanDir(targetDir, {
+            // Options (defaults shown)
+            recursive: true,       // Scan subdirectories
+            omitDotFiles: true,    // Skip .git, .env, etc.
+            generateReports: true  // Write accessibility-report.json/html to disk
+        });
+
+        console.log(`Scan complete. Found ${report.violations.length} violations.`);
+        
+        // Access raw data
+        // console.log(report.metadata);
+        // console.log(report.oobeeSummary);
+    } catch (err) {
+        console.error('Scan failed:', err);
+    }
+}
+
+runScan();
+```
+
+### API Reference
+
+#### `scanDir(path, options)`
+
+Returns a Promise that resolves to the Report Object.
+
+- **path** (`string`): The file or directory path to scan.
+- **options** (`object`):
+  - `recursive` (`boolean`): If false, only scans the immediate directory. Default: `true`.
+  - `omitDotFiles` (`boolean`): If true, ignores files starting with `.`. Default: `true`.
+  - `generateReports` (`boolean`): If true, generates `accessibility-report.json` and `accessibility-report.html` in the current working directory. Default: `true`.
 
 ## 🛠 Supported Frameworks & Languages
 
@@ -23,11 +87,11 @@ This project runs a multi-engine scan supporting the following technologies:
 
 ---
 
-## 🎯 Test Repositories & Benchmarks
+## 🎯 Test Repositories
 
 The following repositories are curated for testing the scanner across different technologies.
 
-> **⚠️ Note for Testers:** When scanning these repositories, look for branches named `start`, `exercise`, or `get-started`. The `main` branch often contains the "fixed" code and may return 0 results.
+> **⚠️ Note for Testers:** When scanning these repositories, look for branches with the accessibility issues. The `main` branch often contains the "fixed" code and may return 0 results.
 
 ### 1. Mobile & Native
 
@@ -59,13 +123,3 @@ The following repositories are curated for testing the scanner across different 
 
 * **[5t3ph/a11y-fails](https://github.com/5t3ph/a11y-fails)**
 * **Why it's a good test:** Most accessibility scanners only look at HTML structure. This repo focuses on **CSS/Visual failures** that require a stylesheet parser.
-
-## 🧰 Global CLI
-
-Install globally and run from any folder (expects `./target-code` to exist):
-
-```bash
-npm i -g linta11y
-linta11y
-```
-

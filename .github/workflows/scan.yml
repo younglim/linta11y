@@ -39,33 +39,18 @@ jobs:
             git clone --depth 1 ${{ inputs.target_repo_url }} ./target-code
           fi
 
-      - name: Run LintA11y CLI
-        continue-on-error: true
-        run: |
-          node ./cli.js
-
-      - name: Run Stylelint (CSS/SCSS)
-        continue-on-error: true
-        run: |
-          npx stylelint "./target-code/**/*.{css,scss,sass,less,vue}" \
-            --config .stylelintrc.json \
-            --formatter json \
-            --output-file stylelint-raw.json \
-            --allow-empty-input || true
-
-      - name: Generate JSON Data
+      - name: Run Audit
+        run: node ./cli.js --debug --target ./target-code
         env:
+          LINTA11Y_DEBUG: 1
           TARGET_REPO_URL: ${{ inputs.target_repo_url }}
           TARGET_BRANCH: ${{ inputs.target_branch }}
-        run: node map-wcag.js
 
-      - name: Generate HTML Report
-        run: node generate-html.js
-
-      - name: Upload Results
+      - name: Upload Report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: accessibility-report-${{ github.run_id }}
+          name: accessibility-reports
           path: |
             accessibility-report.json
             accessibility-report.html

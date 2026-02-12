@@ -1,11 +1,16 @@
 const fs = require('fs');
+const path = require('path');
+const { fileURLToPath } = require('url'); // Add this line
 
 // 1. CAPTURE METADATA FROM ENVIRONMENT
-const metadata = {
-  repositoryUrl: process.env.TARGET_REPO_URL || 'Unknown Repository',
-  branch: process.env.TARGET_BRANCH || 'Default',
-  scanDate: new Date().toLocaleString(),
-  commitHash: process.env.GITHUB_SHA || 'N/A'
+const getMetadata = () => {
+    return {
+        repositoryUrl: process.env.TARGET_REPO_URL || 'Unknown Repository',
+        branch: process.env.TARGET_BRANCH || 'Default',
+        scanDate: new Date().toLocaleString(),
+        commitHash: process.env.GITHUB_SHA || 'N/A',
+        reportGeneratedAt: new Date().toISOString()
+    };
 };
 
 // 2. STRICT RULE ALLOWLIST
@@ -19,7 +24,7 @@ const ruleMap = {
   'react-native-a11y/has-valid-accessibility-component-type': 'WCAG 4.1.2 (Name, Role, Value)',
   'react-native-a11y/has-valid-accessibility-live-region': 'WCAG 4.1.3 (Status Messages)',
   'react-native-a11y/has-valid-accessibility-role': 'WCAG 4.1.2 (Name, Role, Value)',
-  'react-native-a11y/has-valid-accessibility-state': 'WCAG 4.1.2 (Name, Role, Value)',
+  'react-native-a111y/has-valid-accessibility-state': 'WCAG 4.1.2 (Name, Role, Value)',
   'react-native-a11y/has-valid-accessibility-value': 'WCAG 4.1.2 (Name, Role, Value)',
   'react-native-a11y/no-nested-touchables': 'WCAG 2.5.2 (Pointer Cancellation)',
   'react-native-a11y/has-valid-important-for-accessibility': 'WCAG 4.1.2 (Name, Role, Value) [Android]',
@@ -127,27 +132,58 @@ const ruleMap = {
   'font-family-no-missing-generic-family-keyword': 'Best Practice (Fallback Fonts)'
 };
 
+// HELPER: Format WCAG IDs for display
+function formatWcagId(wcag) {
+  if (!wcag) return '';
+  const numbers = wcag.replace('wcag', '').split('');
+  if (numbers.length === 3) {
+    return `WCAG ${numbers[0]}.${numbers[1]}.${numbers[2]}`;
+  } else if (numbers.length === 4) {
+    return `WCAG ${numbers[0]}.${numbers[1]}.${numbers[2]}${numbers[3]}`;
+  } else if (numbers.length === 5) {
+    return `WCAG ${numbers[0]}.${numbers[1]}.${numbers.slice(2).join('')}`;
+  }
+  return wcag;
+}
+
 // HELPER: Detect Framework based on Rule ID
 const getFramework = (ruleId) => {
   if (ruleId.startsWith('react-native-a11y')) return 'React Native';
   if (ruleId.startsWith('jsx-a11y')) return 'React (Web)';
   if (ruleId.startsWith('@angular')) return 'Angular';
   if (ruleId.startsWith('vue')) return 'Vue.js';
-  // [NEW] Better detection for stylelint-a11y
   if (ruleId.startsWith('a11y/') || ruleId.startsWith('declaration-property') || ruleId.startsWith('font-')) return 'CSS/Styles';
+  if (ruleId.startsWith('oobee-')) return 'Oobee (HTML)';
   return 'General';
 };
 
-const loadJSON = (path) => {
-   if (!fs.existsSync(path)) { return []; }
-   try { return JSON.parse(fs.readFileSync(path, 'utf8')); } 
-   catch (e) { return []; }
+// HELPER: Parse WCAG Tags
+const parseWcagTag = (tag) => {
+  if (!tag || typeof tag !== 'string') return null;
+  if (tag === 'wcag2a') return { tag, level: 'A', clause: null, formatted: 'WCAG 2.0 Level A' };
+  if (tag === 'wcag2aa') return { tag, level: 'AA', clause: null, formatted: 'WCAG 2.0 Level AA' };
+  if (tag === 'wcag2aaa') return { tag, level: 'AAA', clause: null, formatted: 'WCAG 2.0 Level AAA' };
+  if (tag === 'wcag21a') return { tag, level: 'A', clause: null, formatted: 'WCAG 2.1 Level A' };
+  if (tag === 'wcag21aa') return { tag, level: 'AA', clause: null, formatted: 'WCAG 2.1 Level AA' };
+  if (tag === 'wcag21aaa') return { tag, level: 'AAA', clause: null, formatted: 'WCAG 2.1 Level AAA' };
+  if (tag === 'wcag22a') return { tag, level: 'A', clause: null, formatted: 'WCAG 2.2 Level A' };
+  if (tag === 'wcag22aa') return { tag, level: 'AA', clause: null, formatted: 'WCAG 2.2 Level AA' };
+  if (tag === 'wcag22aaa') return { tag, level: 'AAA', clause: null, formatted: 'WCAG 2.2 Level AAA' };
+  const m = tag.match(/^wcag(\d{3,5})$/);
+  if (!m) return null;
+  const digits = m[1];
+  const clause = digits.length === 3
+    ? `${digits[0]}.${digits[1]}.${digits[2]}`
+    : digits.length === 4
+    ? `${digits[0]}.${digits[1]}.${digits[2]}${digits[3]}`
+    : `${digits[0]}.${digits[1]}.${digits.slice(2).join('')}`;
+  return { tag, level: null, clause, formatted: formatWcagId(tag) };
 };
 
-const eslintRaw = loadJSON('eslint-raw.json');
-const stylelintRaw = loadJSON('stylelint-raw.json');
+// MOVED: logic for loading JSON is now inside execution block or passed as args
 
-const normalizedStylelint = stylelintRaw.map(file => ({
+// RESTORE: Definitions needed for report generation
+const normalizeStylelintData = (stylelintRaw) => stylelintRaw.map(file => ({
   filePath: file.source.split('/target-code/')[1] || file.source,
   messages: file.warnings.map(w => ({
     ruleId: w.rule,
@@ -158,37 +194,311 @@ const normalizedStylelint = stylelintRaw.map(file => ({
   }))
 }));
 
-const allFiles = [...eslintRaw, ...normalizedStylelint];
-const unmappedRules = new Set();
-
-const violations = allFiles.map(f => {
-   const validMsgs = f.messages.filter(m => {
-     if (ruleMap[m.ruleId]) return true;
-     unmappedRules.add(m.ruleId);
-     return false;
-   });
-
-   if (validMsgs.length === 0) return null;
-
-   f.filePath = f.filePath.split('/target-code/')[1] || f.filePath;
-   f.messages = validMsgs.map(m => ({
-     ...m,
-     wcagClause: ruleMap[m.ruleId],
-     framework: getFramework(m.ruleId)
-   }));
-   return f;
-}).filter(Boolean);
-
-if (unmappedRules.size > 0) {
-  console.log("\n⚠️  FILTERED OUT (Non-mapped rules):");
-  unmappedRules.forEach(r => console.log(`   - ${r}`));
-  console.log("\n");
-}
-
-const finalReport = {
-  metadata: metadata,
-  violations: violations
+const normalizeFilePath = (p) => {
+	if (!p || typeof p !== 'string') return 'Unknown Source';
+	const cleaned = p.split('?')[0].split('#')[0];
+	if (cleaned.endsWith('.oobee-sitemap.xml') || cleaned.endsWith('oobee-sitemap.xml')) return 'Local Sitemap';
+	if (cleaned.startsWith('file://')) return fileURLToPath(cleaned);
+	return cleaned;
 };
 
-fs.writeFileSync('accessibility-report.json', JSON.stringify(finalReport, null, 2));
-console.log(`✅ Scan Complete: ${violations.length} files found with issues.`);
+const normalizeOobee = (raw) => {
+  if (!raw) return [];
+
+  // 1. Detect and Handle Summary Format
+  const inputs = Array.isArray(raw) ? raw : [raw];
+  const isSummaryFormat = inputs.some(i => i && (i.mustFix || i.goodToFix || i.needsReview));
+
+  if (isSummaryFormat) {
+    const fileMap = new Map();
+    inputs.forEach(summary => {
+      ['mustFix', 'goodToFix', 'needsReview'].forEach(bucket => {
+        const section = summary[bucket];
+        if (!section || !section.rules) return;
+
+        Object.entries(section.rules).forEach(([ruleId, ruleData]) => {
+            const prefixedRuleId = ruleId.startsWith('oobee-') ? ruleId : `oobee-${ruleId}`;
+            const items = Array.isArray(ruleData.items) ? ruleData.items : [];
+            const description = ruleData.description || 'Oobee violation';
+            
+            items.forEach(item => {
+                const url = item.url || 'unknown-oobee-source';
+                if (!fileMap.has(url)) fileMap.set(url, []);
+                fileMap.get(url).push({
+                    ruleId: prefixedRuleId,
+                    message: item.message || description,
+                    line: null, column: null,
+                    html: item.html, xpath: item.xpath,
+                    severity: bucket === 'mustFix' ? 2 : 1
+                });
+            });
+        });
+      });
+    });
+    return Array.from(fileMap.entries()).map(([filePath, messages]) => ({ filePath, messages }));
+  }
+
+  // 2. Handle Standard Page-Based Format
+  const pages = Array.isArray(raw) ? raw : (raw.pages || raw.results || raw.data || []);
+  if (!Array.isArray(pages)) return [];
+  return pages.map(page => {
+    const axe = page.axeScanResults || page.axe || page;
+    const violations = Array.isArray(axe?.violations) ? axe.violations : [];
+    const filePath = page.pageUrl || page.url || page.location || 'raw-html';
+
+    const messages = violations.flatMap(v => {
+      const baseMessage = v.description || v.help || v.id || 'Oobee violation';
+      const nodes = Array.isArray(v.nodes) ? v.nodes : [];
+      const ruleId = `oobee-${v.id || 'unknown'}`;
+      
+      if (nodes.length === 0) {
+        return [{ ruleId, message: baseMessage, line: null, column: null, severity: 2 }];
+      }
+      return nodes.map(n => ({
+        ruleId,
+        message: n.failureSummary ? `${baseMessage} — ${n.failureSummary}` : baseMessage,
+        line: null, column: null, severity: 2
+      }));
+    });
+    return { filePath, messages };
+  }).filter(Boolean);
+};
+
+// Create mapping of oobee rules to WCAG clauses
+const oobeeRuleToWcagMap = new Map();
+
+// HELPER: Populate Map from Rule Object
+const processRuleForWcagMap = (ruleId, rule) => {
+  // Ensure conformanceBreakdown exists
+  if (!rule.conformanceBreakdown || rule.conformanceBreakdown.length === 0) {
+    rule.conformanceBreakdown = (rule.conformance || [])
+      .map(parseWcagTag)
+      .filter(Boolean);
+  }
+
+  if (!oobeeRuleToWcagMap.has(ruleId)) {
+    const wcagParts = [];
+    const levels = rule.conformanceBreakdown.filter(cb => cb.level && !cb.clause);
+    const clauses = rule.conformanceBreakdown.filter(cb => cb.clause);
+
+    // Add levels first (e.g., "WCAG 2.1 Level AA")
+    if (levels.length > 0) {
+      wcagParts.push(...levels.map(l => l.formatted));
+    }
+
+    // Add specific clauses (e.g., "WCAG 1.1.1")
+    if (clauses.length > 0) {
+      wcagParts.push(...clauses.map(c => c.formatted));
+    }
+
+    if (wcagParts.length > 0) {
+      // Include description in parentheses for the first clause if available
+      const description = rule.description || '';
+      if (description && clauses.length > 0) {
+         // Appending description to the generated string for context
+         const combined = `${wcagParts.join(', ')} (${description})`;
+         oobeeRuleToWcagMap.set(ruleId, combined);
+      } else {
+         oobeeRuleToWcagMap.set(ruleId, wcagParts.join(', '));
+      }
+    }
+  }
+};
+
+const buildOobeeSummary = (raw) => {
+  const pages = Array.isArray(raw) ? raw : (raw?.pages || raw?.results || raw?.data || []);
+  if (!Array.isArray(pages) || pages.length === 0) return null;
+
+  const initBucket = () => ({ totalItems: 0, rules: {} });
+  const summary = { mustFix: initBucket(), goodToFix: initBucket(), needsReview: initBucket() };
+
+  const bucketForImpact = (impact) => {
+    if (impact === 'critical') return 'mustFix';
+    if (impact === 'serious') return 'needsReview';
+    if (impact === 'moderate' || impact === 'minor') return 'goodToFix';
+    return 'needsReview';
+  };
+
+  for (const page of pages) {
+    const axe = page.axeScanResults || page.axe || page;
+    const violations = Array.isArray(axe?.violations) ? axe.violations : [];
+    const pageUrl = page.pageUrl || page.url || page.location || 'raw-html';
+    
+    for (const v of violations) {
+      const bucket = bucketForImpact(v.impact);
+      const ruleId = v.id || 'oobee-unknown';
+      const rule = summary[bucket].rules[ruleId] || {
+        description: v.description || v.help || ruleId,
+        axeImpact: v.impact || 'unknown',
+        helpUrl: v.helpUrl || '',
+        conformance: Array.isArray(v.tags) ? v.tags.filter(t => String(t).startsWith('wcag')) : [],
+        conformanceBreakdown: [],
+        totalItems: 0,
+        items: []
+      };
+      
+      // Items logic
+      const nodes = Array.isArray(v.nodes) ? v.nodes : [];
+      for (const n of nodes) {
+        rule.items.push({
+          html: n.html || '',
+          message: n.failureSummary || v.description || v.help || 'Oobee violation',
+          xpath: Array.isArray(n.target) ? n.target.join(' ') : (n.xpath || n.target || ''),
+          url: pageUrl
+        });
+      }
+      rule.totalItems = rule.items.length;
+      summary[bucket].rules[ruleId] = rule;
+    }
+  }
+
+  for (const key of Object.keys(summary)) {
+    summary[key].totalItems = Object.values(summary[key].rules)
+      .reduce((acc, r) => acc + (r.totalItems || 0), 0);
+  }
+
+  return summary;
+};
+
+const isOobeeSummary = (raw) => !!raw && typeof raw === 'object' && ('mustFix' in raw || 'goodToFix' in raw || 'needsReview' in raw);
+
+const normalizeOobeeSummary = (raw) => ({
+  mustFix: { totalItems: raw?.mustFix?.totalItems || 0, rules: raw?.mustFix?.rules || {} },
+  goodToFix: { totalItems: raw?.goodToFix?.totalItems || 0, rules: raw?.goodToFix?.rules || {} },
+  needsReview: { totalItems: raw?.needsReview?.totalItems || 0, rules: raw?.needsReview?.rules || {} }
+});
+
+const mergeOobeeSummaries = (list) => {
+  const merged = normalizeOobeeSummary({});
+  const mergeBucket = (target, source) => {
+    for (const [ruleId, r] of Object.entries(source.rules || {})) {
+      const existing = target.rules[ruleId] || {
+        description: r.description || '',
+        axeImpact: r.axeImpact || 'unknown',
+        helpUrl: r.helpUrl || '',
+        conformance: r.conformance || [],
+        conformanceBreakdown: r.conformanceBreakdown || [],
+        totalItems: 0,
+        items: []
+      };
+      existing.items = existing.items.concat(r.items || []);
+      existing.totalItems = existing.items.length;
+      target.rules[ruleId] = existing;
+    }
+    target.totalItems = Object.values(target.rules).reduce((acc, rr) => acc + (rr.totalItems || 0), 0);
+  };
+  for (const raw of list) {
+    const s = normalizeOobeeSummary(raw);
+    mergeBucket(merged.mustFix, s.mustFix);
+    mergeBucket(merged.goodToFix, s.goodToFix);
+    mergeBucket(merged.needsReview, s.needsReview);
+  }
+  return merged;
+};
+
+// CORE FUNCTION: Generate Report Object
+function generateReport(eslintRaw, stylelintRaw, oobeeRaw, options = {}) {
+    const metadata = options.metadata || getMetadata();
+    
+    // Reset map for clean run
+    oobeeRuleToWcagMap.clear();
+
+    const normalizedStylelint = normalizeStylelintData(stylelintRaw || []);
+    const normalizedOobee = normalizeOobee(oobeeRaw);
+
+    const oobeeSummary = Array.isArray(oobeeRaw) && oobeeRaw.every(isOobeeSummary)
+      ? mergeOobeeSummaries(oobeeRaw)
+      : (isOobeeSummary(oobeeRaw) ? normalizeOobeeSummary(oobeeRaw) : buildOobeeSummary(oobeeRaw));
+
+    // POST-PROCESS: Populate WCAG Map from the final summary
+    if (oobeeSummary) {
+      ['mustFix', 'goodToFix', 'needsReview'].forEach(bucket => {
+        if (!oobeeSummary[bucket] || !oobeeSummary[bucket].rules) return;
+        Object.entries(oobeeSummary[bucket].rules).forEach(([ruleId, rule]) => {
+          processRuleForWcagMap(ruleId, rule);
+        });
+      });
+    }
+
+    if (oobeeSummary && options.log !== false) {
+      console.log('[map-wcag] oobee summary totals:', {
+        mustFix: oobeeSummary.mustFix?.totalItems || 0,
+        goodToFix: oobeeSummary.goodToFix?.totalItems || 0,
+        needsReview: oobeeSummary.needsReview?.totalItems || 0
+      });
+    }
+
+    const allFiles = [...(eslintRaw || []), ...normalizedStylelint, ...normalizedOobee];
+    const unmappedRules = new Set();
+
+    const getWcagClause = (ruleId) => {
+      if (ruleMap[ruleId]) return ruleMap[ruleId];
+      if (ruleId.startsWith('oobee-')) {
+        const cleanRuleId = ruleId.replace('oobee-', '');
+        const mapped = oobeeRuleToWcagMap.get(cleanRuleId);
+        if (mapped) return mapped;
+        return 'Oobee (Unmapped Rule)';
+      }
+      return null;
+    };
+
+    const violations = allFiles.map(f => {
+      const messages = Array.isArray(f.messages) ? f.messages : [];
+      const validMsgs = messages
+        .map(m => ({ ...m, wcagClause: getWcagClause(m.ruleId || '') }))
+        .filter(m => {
+          if (m.wcagClause) return true;
+          if (m.ruleId) unmappedRules.add(m.ruleId);
+          return false;
+        });
+
+      if (validMsgs.length === 0) return null;
+
+      const normalizedPath = normalizeFilePath(f.filePath);
+      f.filePath = (normalizedPath || '').split('/target-code/')[1] || normalizedPath || 'Unknown Source';
+      f.messages = validMsgs.map(m => ({
+        ...m,
+        framework: getFramework(m.ruleId || '')
+      }));
+      return f;
+    }).filter(Boolean);
+
+    if (unmappedRules.size > 0 && options.log !== false) {
+      console.log("\n⚠️  FILTERED OUT (Non-mapped rules):");
+      unmappedRules.forEach(r => console.log(`   - ${r}`));
+      console.log("\n");
+    }
+
+    return {
+      metadata: metadata,
+      violations: violations,
+      oobeeSummary: oobeeSummary
+    };
+}
+
+// SCRIPT EXECUTION
+if (require.main === module) {
+    const loadJSON = (path) => {
+       if (!fs.existsSync(path)) { return []; }
+       try { return JSON.parse(fs.readFileSync(path, 'utf8')); } 
+       catch (e) { return []; }
+    };
+
+    const eslintRaw = loadJSON('eslint-raw.json');
+    const stylelintRaw = loadJSON('stylelint-raw.json');
+    const oobeeRaw = loadJSON('oobee-raw.json');
+
+    const finalReport = generateReport(eslintRaw, stylelintRaw, oobeeRaw);
+
+    fs.writeFileSync('accessibility-report.json', JSON.stringify(finalReport, null, 2));
+    console.log(`✅ Scan Complete: ${finalReport.violations.length} files found with issues.`);
+    
+    // Log stats logic mostly remains the same, just checking the input arrays
+    const eslintCount = eslintRaw.reduce((sum, file) => sum + (file.messages || []).length, 0);
+    console.log(`ESLint Violations: ${eslintCount}`);
+
+    const stylelintCount = stylelintRaw.reduce((sum, file) => sum + (file.warnings || []).length, 0);
+    console.log(`Stylelint Violations: ${stylelintCount}`);
+}
+
+module.exports = { generateReport };

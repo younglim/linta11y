@@ -1,12 +1,16 @@
 {
   "name": "linta11y",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "younglim",
   "license": "MIT",
   "description": "Universal accessibility scanner that lints remote repositories and produces JSON/HTML reports.",
   "scripts": {
     "scan": "echo 'Run via workflow'",
-    "test": "eslint \"./target-code/**/*.{js,jsx,ts,tsx,vue,html}\" --config eslint.config.js --format json --output-file eslint-raw.json"
+    "test": "eslint \"./target-code/**/*.{js,jsx,ts,tsx,vue,html}\" --config eslint.config.js --format json --output-file eslint-raw.json",
+    "oobee": "node cli.js --oobee",
+    "report": "node map-wcag.js && node generate-html.js",
+    "report:html": "node generate-html.js",
+    "report:json": "node map-wcag.js"
   },
   "bin": {
     "linta11y": "./cli.js"
@@ -32,5 +36,8 @@
     "stylelint-config-standard-scss": "^11.1.0",
     "typescript": "^5.4.0",
     "vue-eslint-parser": "^9.4.0"
+  },
+  "dependencies": {
+    "@govtechsg/oobee": "^0.10.78-alpha1"
   }
 }
