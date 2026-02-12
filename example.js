@@ -12,6 +12,7 @@ async function main() {
         const report = await scanDir(resolvedPath, {
             recursive: true,      // Scan subdirectories
             omitDotFiles: true,   // Skip .git, etc
+            oobee: true,          // Enable/Disable HTML scanning
             generateReports: true // Write accessibility-report.json to disk
         });
 

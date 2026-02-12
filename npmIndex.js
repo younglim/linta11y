@@ -17,7 +17,8 @@ async function scanDir(targetPathArg, options = {}) {
     const {
         recursive = true,
         omitDotFiles = true,
-        generateReports = true
+        generateReports = true,
+        oobee = true
     } = options;
 
     const targetPath = path.resolve(targetPathArg || process.cwd());
@@ -94,72 +95,74 @@ async function scanDir(targetPathArg, options = {}) {
     let oobeeResults = [];
     const htmlFiles = [];
     
-    if (isFile) {
-        if (/\.(html|htm)$/i.test(targetPath)) htmlFiles.push(targetPath);
-    } else {
-        const walk = (dir) => {
-            let entries;
-            try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return; }
-            for (const e of entries) {
-                if (omitDotFiles && e.name.startsWith('.')) continue;
-                if (e.name === 'node_modules') continue;
-                
-                const full = path.join(dir, e.name);
-                if (e.isDirectory()) {
-                    if (recursive) walk(full);
-                } else if (/\.(html|htm)$/i.test(e.name)) {
-                    htmlFiles.push(full);
+    if (oobee) {
+        if (isFile) {
+            if (/\.(html|htm)$/i.test(targetPath)) htmlFiles.push(targetPath);
+        } else {
+            const walk = (dir) => {
+                let entries;
+                try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return; }
+                for (const e of entries) {
+                    if (omitDotFiles && e.name.startsWith('.')) continue;
+                    if (e.name === 'node_modules') continue;
+                    
+                    const full = path.join(dir, e.name);
+                    if (e.isDirectory()) {
+                        if (recursive) walk(full);
+                    } else if (/\.(html|htm)$/i.test(e.name)) {
+                        htmlFiles.push(full);
+                    }
                 }
-            }
-        };
-        walk(targetDir);
-    }
+            };
+            walk(targetDir);
+        }
 
-    if (htmlFiles.length > 0) {
-        try {
-            const { scanHTML } = await import(path.join(pkgRoot, 'node_modules', '@govtechsg', 'oobee', 'dist', 'npmIndex.js'));
-            const batchSize = 100;
-            for (let i = 0; i < htmlFiles.length; i += batchSize) {
-                const batchFiles = htmlFiles.slice(i, i + batchSize);
-                const htmlStrings = batchFiles.map(f => fs.readFileSync(f, 'utf8'));
-                
-                const results = await scanHTML(htmlStrings, {
-                    name: 'GovTech A11y Team',
-                    email: 'accessibility@tech.gov.sg'
-                });
+        if (htmlFiles.length > 0) {
+            try {
+                const { scanHTML } = await import(path.join(pkgRoot, 'node_modules', '@govtechsg', 'oobee', 'dist', 'npmIndex.js'));
+                const batchSize = 100;
+                for (let i = 0; i < htmlFiles.length; i += batchSize) {
+                    const batchFiles = htmlFiles.slice(i, i + batchSize);
+                    const htmlStrings = batchFiles.map(f => fs.readFileSync(f, 'utf8'));
+                    
+                    const results = await scanHTML(htmlStrings, {
+                        name: 'GovTech A11y Team',
+                        email: 'accessibility@tech.gov.sg'
+                    });
 
-                // Fix URLs logic
-                const fixUrl = (obj, key) => {
-                    if (obj && typeof obj[key] === 'string') {
-                        const match = obj[key].match(/^raw-html-(\d+)$/);
-                        if (match) {
-                            const idx = parseInt(match[1], 10) - 1;
-                            if (idx >= 0 && idx < batchFiles.length) {
-                                obj[key] = batchFiles[idx];
+                    // Fix URLs logic
+                    const fixUrl = (obj, key) => {
+                        if (obj && typeof obj[key] === 'string') {
+                            const match = obj[key].match(/^raw-html-(\d+)$/);
+                            if (match) {
+                                const idx = parseInt(match[1], 10) - 1;
+                                if (idx >= 0 && idx < batchFiles.length) {
+                                    obj[key] = batchFiles[idx];
+                                }
                             }
                         }
-                    }
-                };
-                
-                ['mustFix', 'goodToFix', 'needsReview'].forEach(category => {
-                    if (results[category] && results[category].rules) {
-                        Object.values(results[category].rules).forEach(rule => {
-                            if (Array.isArray(rule.items)) {
-                                rule.items.forEach(item => fixUrl(item, 'url'));
-                            }
+                    };
+                    
+                    ['mustFix', 'goodToFix', 'needsReview'].forEach(category => {
+                        if (results[category] && results[category].rules) {
+                            Object.values(results[category].rules).forEach(rule => {
+                                if (Array.isArray(rule.items)) {
+                                    rule.items.forEach(item => fixUrl(item, 'url'));
+                                }
+                            });
+                        }
+                    });
+
+                    if (Array.isArray(results.pages)) {
+                        results.pages.forEach(p => {
+                            fixUrl(p, 'url'); fixUrl(p, 'pageUrl');
                         });
                     }
-                });
-
-                if (Array.isArray(results.pages)) {
-                    results.pages.forEach(p => {
-                        fixUrl(p, 'url'); fixUrl(p, 'pageUrl');
-                    });
+                    oobeeResults.push(results);
                 }
-                oobeeResults.push(results);
+            } catch (e) {
+                console.error("Oobee failed", e);
             }
-        } catch (e) {
-            console.error("Oobee failed", e);
         }
     }
     

@@ -25,7 +25,7 @@ const targetDir = targetFlagIndex >= 0 && args[targetFlagIndex + 1]
 	? path.resolve(cwd, args[targetFlagIndex + 1])
 	: (fs.existsSync(path.join(cwd, 'target-code')) ? path.join(cwd, 'target-code') : cwd);
 
-const runOobee = args.includes('--oobee') || process.env.LINTA11Y_OOBEE === '1';
+const runOobee = !args.includes('--no-oobee') && process.env.LINTA11Y_NO_OOBEE !== '1';
 
 const eslintBin = path.join(pkgRoot, 'node_modules', '.bin', process.platform === 'win32' ? 'eslint.cmd' : 'eslint');
 const stylelintBin = path.join(pkgRoot, 'node_modules', '.bin', process.platform === 'win32' ? 'stylelint.cmd' : 'stylelint');

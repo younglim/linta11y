@@ -13,8 +13,8 @@ node cli.js
 # Scan a specific directory
 node cli.js --target ./my-project/src
 
-# Enable HTML scanning (Oobee)
-node cli.js --target ./public --oobee
+# Disable HTML scanning (Oobee)
+node cli.js --no-oobee
 
 # Enable debug logging
 node cli.js --debug
@@ -25,7 +25,7 @@ node cli.js --debug
 | Flag | Alias | Description |
 |------|-------|-------------|
 | `--target` | `-t` | Directory to scan. Defaults to `./target-code` or current working directory. |
-| `--oobee` | | Enable extensive HTML scanning using Oobee. |
+| `--no-oobee` | | Disable extensive HTML scanning using Oobee (Enabled by default). |
 | `--debug` | | Enable verbose logging for debugging purposes. |
 
 ## Programmatic Usage (Node.js API)
