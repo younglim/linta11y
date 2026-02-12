@@ -20,7 +20,7 @@ const htmlTemplate = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Accessibility Audit Report</title>
+  <title>linta11y Static Code Accessibility Audit Report</title>
   <style>
     :root {
       --bg: #f8fafc;
@@ -346,6 +346,14 @@ const htmlTemplate = `<!DOCTYPE html>
              .replace(/'/g, "&#039;");
     };
 
+    // Helper to format messages with bullet points for lists
+    const formatMessage = (msg) => {
+        const safe = escapeHtml(msg);
+        return safe.replace(/(Fix\\s+(?:one|any|all)\\s+of\\s+the\\s+following:)([\\s\\S]*)/, (match, prefix, rest) => {
+            return prefix + rest.replace(/\\n\\s*/g, '<br> &bull; ');
+        }).replace(/\\n/g, '<br>');
+    };
+
     try {
       const meta = DATA.metadata || {};
       const violations = DATA.violations || [];
@@ -365,7 +373,7 @@ const htmlTemplate = `<!DOCTYPE html>
       // RENDER HEADER
       let html = \`
         <header>
-          <h1>Accessibility Audit Report</h1>
+          <h1>linta11y Static Code Accessibility Audit Report</h1>
           <div class="meta-grid">
             <div class="meta-item">
               <span class="meta-label">Repository</span>
@@ -455,7 +463,7 @@ const htmlTemplate = `<!DOCTYPE html>
                         <span class="tag tag-wcag">\${msg.wcagClause || 'Best Practice'}</span>
                         <span class="tag tag-rule">\${ruleId}</span>
                     </div>
-                  <div class="message">\${escapeHtml(msg.message).replace(/\\n/g, '<br>')}</div>
+                  <div class="message">\${formatMessage(msg.message)}</div>
                   
                   <div class="code-block">
                     \${msg.html ? \`
