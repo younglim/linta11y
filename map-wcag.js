@@ -137,7 +137,7 @@ const getFramework = (ruleId) => {
   if (ruleId.startsWith('vue')) return 'Vue.js';
   // [NEW] Better detection for stylelint-a11y
   if (ruleId.startsWith('a11y/') || ruleId.startsWith('declaration-property') || ruleId.startsWith('font-')) return 'CSS/Styles';
-  if (ruleId.startsWith('oobee-')) return 'Oobee (Dynamic)';
+  if (ruleId.startsWith('oobee-')) return 'Oobee (HTML)';
   return 'General';
 };
 
@@ -234,7 +234,7 @@ const normalizeOobee = (raw) => {
                     column: null,
                     html: item.html,
                     xpath: item.xpath,
-                    severity: bucket === 'mustFix' ? 2 : 1
+                    severity: bucket === 'mustFix' ? 2 : 1 // ESLint style Critical error for mustFix, else non-critical
                 });
             });
         });
