@@ -135,6 +135,8 @@ async function scanDir(targetPathArg, options = {}) {
                     const fixUrl = (obj, key) => {
                         if (obj && typeof obj[key] === 'string') {
                             // Check for both 'raw-html-N' (Oobee default) and just 'raw-html' (if single file)
+                            // Also handle case matching just "raw-html" without suffix more explicitly if regex fails? 
+                            // The regex /^raw-html(?:-(\d+))?$/ handles: "raw-html" (group 1 undef), "raw-html-123" (group 1 "123").
                             const match = obj[key].match(/^raw-html(?:-(\d+))?$/);
                             if (match) {
                                 // If user provided a specific pageUrl and we are scanning a single file (batch size 1 usually), use it.
@@ -169,6 +171,11 @@ async function scanDir(targetPathArg, options = {}) {
                             fixUrl(p, 'url'); fixUrl(p, 'pageUrl');
                         });
                     }
+
+                    // Fix top-level url properties if they exist (fixes issue where single page scan report uses root url)
+                    fixUrl(results, 'url');
+                    fixUrl(results, 'pageUrl');
+
                     oobeeResults.push(results);
                 }
             } catch (e) {

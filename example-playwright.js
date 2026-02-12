@@ -27,12 +27,13 @@ const { scanDir } = require('./npmIndex'); // In your project: require('linta11y
 
         // 4. Run linta11y on that single file
         const report = await scanDir(tempFilePath, { 
-            generateReports: false, // We just want the JSON object back
+            generateReports: true, // We just want the JSON object back
             oobee: true,
             pageUrl: targetUrl // Pass the real URL here so the report shows it instead of temp-scan.html
         });
 
-        console.log(`\n🔍 Accessibility Violations Found: ${report.violations.length}`);
+        console.log('\n🔍 Accessibility Report:');
+        console.log(JSON.stringify(report, null, 2));
 
         // 5. Clean up the temp file immediately (optional)
         if (fs.existsSync(tempFilePath)) {
