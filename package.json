@@ -1,6 +1,6 @@
 {
   "name": "linta11y",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": "younglim",
   "license": "MIT",
   "description": "Universal accessibility scanner that lints remote repositories and produces JSON/HTML reports.",

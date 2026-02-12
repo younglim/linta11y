@@ -72,6 +72,21 @@ Returns a Promise that resolves to the Report Object.
   - `omitDotFiles` (`boolean`): If true, ignores files starting with `.`. Default: `true`.
   - `generateReports` (`boolean`): If true, generates `accessibility-report.json` and `accessibility-report.html` in the current working directory. Default: `true`.
 
+#### Integration with E2E Tools (Playwright/Puppeteer)
+
+Since `linta11y` scans files on disk, you cannot pass a live Page object directly. Instead, grasp the current DOM snapshot, save it to a temporary `.html` file, and then run `scanDir`.
+
+**Prerequisite:** Ensure you have Playwright installed:
+```bash
+npm install -D playwright
+```
+
+See **[example-playwright.js](./example-playwright.js)** for a complete working example of how to:
+1. Snapshot the DOM from a running browser.
+2. Save it to a temporary file.
+3. Run the scan programmatically.
+4. Clean up afterwards.
+
 ## 🛠 Supported Frameworks & Languages
 
 This project runs a multi-engine scan supporting the following technologies:

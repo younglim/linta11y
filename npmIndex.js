@@ -18,7 +18,8 @@ async function scanDir(targetPathArg, options = {}) {
         recursive = true,
         omitDotFiles = true,
         generateReports = true,
-        oobee = true
+        oobee = true,
+        pageUrl = null // New option
     } = options;
 
     const targetPath = path.resolve(targetPathArg || process.cwd());
@@ -133,9 +134,19 @@ async function scanDir(targetPathArg, options = {}) {
                     // Fix URLs logic
                     const fixUrl = (obj, key) => {
                         if (obj && typeof obj[key] === 'string') {
-                            const match = obj[key].match(/^raw-html-(\d+)$/);
+                            // Check for both 'raw-html-N' (Oobee default) and just 'raw-html' (if single file)
+                            const match = obj[key].match(/^raw-html(?:-(\d+))?$/);
                             if (match) {
-                                const idx = parseInt(match[1], 10) - 1;
+                                // If user provided a specific pageUrl and we are scanning a single file (batch size 1 usually), use it.
+                                if (pageUrl && batchFiles.length === 1) {
+                                    obj[key] = pageUrl;
+                                    return;
+                                }
+
+                                // If there is a capture group (\d+), use it (1-based index). 
+                                // If no capture group (just 'raw-html'), it means batch size was 1 or single file scan, typically index 0.
+                                const idx = match[1] ? parseInt(match[1], 10) - 1 : 0;
+                                
                                 if (idx >= 0 && idx < batchFiles.length) {
                                     obj[key] = batchFiles[idx];
                                 }
