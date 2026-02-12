@@ -40,7 +40,7 @@ jobs:
           fi
 
       - name: Run Audit
-        run: node ./cli.js --oobee --debug --target ./target-code
+        run: node ./cli.js --debug --target ./target-code
         env:
           LINTA11Y_DEBUG: 1
           TARGET_REPO_URL: ${{ inputs.target_repo_url }}
